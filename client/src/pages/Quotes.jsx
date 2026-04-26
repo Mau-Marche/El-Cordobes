@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from '@/components/ui/toast';
 import { Plus, Search, Edit, Trash2, Printer, ArrowRight, ChevronLeft, ChevronRight, X, Loader2, BookOpen, User, Car } from 'lucide-react';
 import { formatCurrency, formatDate, QUOTE_STATUS } from '@/lib/utils';
+import { buildPrintHTML } from '@/lib/printQuote';
 
 const EMPTY_FORM = { clientId: '', vehicleId: '', validUntil: '', notes: '', laborCost: '0', status: 'DRAFT', items: [] };
 const EMPTY_ITEM = { description: '', quantity: '1', unitPrice: '0', subtotal: '0' };
@@ -154,8 +155,8 @@ function CatalogSearch({ onSelect }) {
   );
 }
 
-/* ── Genera el HTML del presupuesto para imprimir ───────────────── */
-function buildPrintHTML(quote, workshop = {}) {
+/* ── buildPrintHTML se importa desde @/lib/printQuote ───────────── */
+function _unused(quote, workshop = {}) {
   const workshopName = workshop.workshopName || 'El Cordobés';
   const fmt = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n ?? 0);
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';

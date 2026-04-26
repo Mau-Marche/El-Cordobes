@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { jobsApi } from '@/lib/api';
+import { jobsApi, settingsApi } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -9,9 +9,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { toast } from '@/components/ui/toast';
 import {
   ArrowLeft, Edit, Upload, Trash2, FileText,
-  Car, User, Paperclip, Image, File, Download
+  Car, User, Paperclip, Image, File, Download, Printer
 } from 'lucide-react';
 import { formatDate, formatCurrency, JOB_STATUS, clientFullName } from '@/lib/utils';
+import { buildPrintHTML } from '@/lib/printQuote';
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export default function JobDetail() {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -73,6 +75,30 @@ export default function JobDetail() {
     }
   }
 
+  async function handlePrintComprobante() {
+    setPrinting(true);
+    try {
+      const [{ data: quote }, { data: workshop }] = await Promise.all([
+        jobsApi.toQuote(job.id),
+        settingsApi.get(),
+      ]);
+      const html = buildPrintHTML(quote, workshop, {
+        docTitle: 'Comprobante',
+        mileageIn: quote._jobMileageIn,
+      });
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) {
+        toast({ title: 'El navegador bloqueó la ventana. Permitila para imprimir.', variant: 'error' });
+        return;
+      }
+      win.document.write(html);
+      win.document.close();
+      toast({ title: 'Comprobante generado', variant: 'success' });
+    } catch (err) {
+      toast({ title: err.response?.data?.error || 'Error al generar comprobante', variant: 'error' });
+    } finally { setPrinting(false); }
+  }
+
   if (loading) {
     return <div className="flex justify-center py-24"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
   }
@@ -87,6 +113,9 @@ export default function JobDetail() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/jobs')}><ArrowLeft className="h-4 w-4" />Volver</Button>
+            <Button variant="outline" onClick={handlePrintComprobante} loading={printing}>
+              <Printer className="h-4 w-4" />Imprimir comprobante
+            </Button>
             <Button onClick={() => navigate('/jobs', { state: { editId: job.id } })}>
               <Edit className="h-4 w-4" />Editar
             </Button>

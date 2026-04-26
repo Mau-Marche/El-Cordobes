@@ -151,6 +151,62 @@ router.put('/:id', async (req, res) => {
   res.json(job);
 });
 
+// POST /api/jobs/:id/to-quote — genera un comprobante/presupuesto desde el trabajo
+router.post('/:id/to-quote', async (req, res) => {
+  try {
+    const job = await prisma.job.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: {
+        items: true,
+        vehicle: { include: { client: true } },
+      },
+    });
+    if (!job) return res.status(404).json({ error: 'Trabajo no encontrado' });
+
+    // Número correlativo usando el mismo pool de presupuestos
+    const last = await prisma.quote.findFirst({ orderBy: { id: 'desc' } });
+    const next = last ? parseInt(last.number.replace(/\D/g, '')) + 1 : 1;
+    const number = `COMP-${String(next).padStart(5, '0')}`;
+
+    // Armar notas: combinar descripción del trabajo + notas internas
+    const notesLines = [];
+    if (job.description) notesLines.push(job.description);
+    if (job.notes) notesLines.push(job.notes);
+
+    const quote = await prisma.quote.create({
+      data: {
+        number,
+        clientId: job.vehicle.clientId,
+        vehicleId: job.vehicleId,
+        date: job.date,
+        notes: notesLines.length ? notesLines.join('\n') : null,
+        laborCost: job.laborCost,
+        total: job.totalCost,
+        status: 'APPROVED',
+        items: {
+          create: job.items.map(i => ({
+            description: i.description,
+            quantity:    i.quantity,
+            unitPrice:   i.unitPrice,
+            subtotal:    i.subtotal,
+          })),
+        },
+      },
+      include: {
+        items: true,
+        client: true,
+        vehicle: true,
+      },
+    });
+
+    // Adjuntar mileageIn del trabajo para que el frontend lo muestre en el comprobante
+    res.status(201).json({ ...quote, _jobMileageIn: job.mileageIn });
+  } catch (err) {
+    console.error('Error generating comprobante:', err.message);
+    res.status(500).json({ error: 'Error al generar comprobante: ' + err.message });
+  }
+});
+
 // DELETE /api/jobs/:id
 router.delete('/:id', async (req, res) => {
   await prisma.job.delete({ where: { id: parseInt(req.params.id) } });

@@ -59,6 +59,7 @@ export const jobsApi = {
   create: (data) => api.post('/jobs', data),
   update: (id, data) => api.put(`/jobs/${id}`, data),
   delete: (id) => api.delete(`/jobs/${id}`),
+  toQuote: (id) => api.post(`/jobs/${id}/to-quote`),
   uploadAttachments: (id, formData) =>
     api.post(`/jobs/${id}/attachments`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteAttachment: (jobId, attachId) => api.delete(`/jobs/${jobId}/attachments/${attachId}`),

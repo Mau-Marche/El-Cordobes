@@ -57,7 +57,7 @@ export default function VehicleDetail() {
       notes: '',
       items: [],
     }));
-    openJobDialog();
+    setNewJobDialog(true);
   }
 
   async function saveJob() {
