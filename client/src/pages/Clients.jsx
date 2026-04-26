@@ -88,6 +88,9 @@ export default function Clients() {
   const [cForm,     setCForm]     = useState(EMPTY_CLIENT);
   const [vForm,     setVForm]     = useState(EMPTY_VEHICLE);
   const [saving,    setSaving]    = useState(false);
+  // Modo km: 'set' = ingresar nuevo total | 'add' = sumar al total actual
+  const [kmMode,    setKmMode]    = useState('set');
+  const [kmInput,   setKmInput]   = useState('');
 
   const navigate = useNavigate();
   const models = getModels(vForm.brand);
@@ -143,6 +146,8 @@ export default function Clients() {
   function openNewVehicle(clientId = '') {
     setVForm({ ...EMPTY_VEHICLE, clientId: String(clientId) });
     setSelVehicle(null);
+    setKmMode('set');
+    setKmInput('');
     setVDialog('create');
   }
   function openEditVehicle(v) {
@@ -157,22 +162,32 @@ export default function Clients() {
       notes:         v.notes         || '',
     });
     setSelVehicle(v);
+    setKmMode('set');
+    setKmInput('');
     setVDialog('edit');
   }
-  function closeVDialog() { setVDialog(null); setSelVehicle(null); }
+  function closeVDialog() { setVDialog(null); setSelVehicle(null); setKmMode('set'); setKmInput(''); }
   function setV(name, value) { setVForm(f => ({ ...f, [name]: value })); }
 
   async function saveVehicle() {
     if (!vForm.clientId || !vForm.brand || !vForm.model) {
       toast({ title: 'Cliente, marca y modelo son requeridos', variant: 'error' }); return;
     }
+    // Calcular mileage final según modo
+    let finalMileage = vForm.mileage;
+    if (kmMode === 'add' && kmInput) {
+      const base = parseInt(selVehicle?.mileage || 0);
+      const added = parseInt(kmInput || 0);
+      finalMileage = String(base + added);
+    }
     setSaving(true);
     try {
+      const payload = { ...vForm, mileage: finalMileage };
       if (vDialog === 'create') {
-        await vehiclesApi.create(vForm);
+        await vehiclesApi.create(payload);
         toast({ title: 'Vehículo creado', variant: 'success' });
       } else {
-        await vehiclesApi.update(selVehicle.id, vForm);
+        await vehiclesApi.update(selVehicle.id, payload);
         toast({ title: 'Vehículo actualizado', variant: 'success' });
       }
       closeVDialog(); fetchClients();
@@ -455,10 +470,43 @@ export default function Clients() {
               <Input className="mt-1 uppercase" placeholder="ABC123 / AA123BB"
                 value={vForm.plate} onChange={e => setV('plate', e.target.value.toUpperCase())} />
             </div>
-            <div>
-              <label className="text-sm font-medium">Kilometraje</label>
-              <Input className="mt-1" type="number" placeholder="0"
-                value={vForm.mileage} onChange={e => setV('mileage', e.target.value)} />
+            {/* ── Kilometraje con modo set/add ── */}
+            <div className="col-span-2">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium">Kilometraje</label>
+                {vDialog === 'edit' && selVehicle?.mileage && (
+                  <div className="flex rounded-lg border overflow-hidden text-xs">
+                    <button type="button"
+                      onClick={() => { setKmMode('set'); setKmInput(''); }}
+                      className={`px-3 py-1 font-medium transition-colors ${kmMode === 'set' ? 'bg-orange-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                    >Nuevo total</button>
+                    <button type="button"
+                      onClick={() => { setKmMode('add'); setV('mileage', String(selVehicle.mileage)); }}
+                      className={`px-3 py-1 font-medium transition-colors ${kmMode === 'add' ? 'bg-orange-500 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                    >Agregar recorrido</button>
+                  </div>
+                )}
+              </div>
+              {kmMode === 'set' ? (
+                <Input className="mt-1" type="number" placeholder="0" min="0"
+                  value={vForm.mileage} onChange={e => setV('mileage', e.target.value)} />
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 bg-slate-50 border rounded-md px-3 py-2 text-sm">
+                    <span className="text-slate-400">Km actuales:</span>
+                    <span className="font-semibold text-slate-700">
+                      {Number(selVehicle?.mileage || 0).toLocaleString('es-AR')} km
+                    </span>
+                  </div>
+                  <Input type="number" placeholder="Km recorridos a sumar..." min="0"
+                    value={kmInput} onChange={e => setKmInput(e.target.value)} />
+                  {kmInput && (
+                    <p className="text-xs text-emerald-600 font-medium">
+                      Nuevo total: {(parseInt(selVehicle?.mileage || 0) + parseInt(kmInput || 0)).toLocaleString('es-AR')} km
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium">Color</label>
