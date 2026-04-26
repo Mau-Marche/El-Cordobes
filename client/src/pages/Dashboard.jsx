@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardApi } from '@/lib/api';
+import { dashboardApi, jobsApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { WorkshopLogo } from '@/components/ui/WorkshopLogo';
@@ -38,8 +38,10 @@ function StatCard({ icon: Icon, label, value, colorBg, colorIcon, colorAccent, o
             <Icon className={`h-5 w-5 ${colorIcon}`} />
           </div>
         </div>
-        {onClick && (
-          <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wide">Ver todos →</p>
+        {onClick && value > 0 && (
+          <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wide">
+            {value === 1 ? 'Ver trabajo →' : 'Ver todos →'}
+          </p>
         )}
       </CardContent>
     </Card>
@@ -187,6 +189,19 @@ export default function Dashboard() {
   /* Filtrar histórico SPC-GE */
   const filteredJobs = recentJobs.filter(j => !j.description?.includes('SPC-GE'));
 
+  /* Navega a la ficha si hay 1 solo trabajo con ese estado, o a la lista filtrada si hay varios */
+  async function goToJobs(status, count) {
+    if (count === 0) return;
+    if (count === 1) {
+      try {
+        const { data: res } = await jobsApi.list({ status, limit: 1 });
+        const job = res.data?.[0];
+        if (job) { navigate(`/jobs/${job.id}`); return; }
+      } catch { /* fallback a lista */ }
+    }
+    navigate(`/jobs?status=${status}`);
+  }
+
   return (
     <div>
       <PageHeader
@@ -273,7 +288,7 @@ export default function Dashboard() {
             colorBg="bg-amber-100"
             colorIcon="text-amber-600"
             colorAccent="bg-amber-500"
-            onClick={() => navigate('/jobs?status=PENDING')}
+            onClick={() => goToJobs('PENDING', stats.pendingJobs)}
           />
           <StatCard
             icon={Wrench}
@@ -282,7 +297,7 @@ export default function Dashboard() {
             colorBg="bg-orange-100"
             colorIcon="text-orange-600"
             colorAccent="bg-orange-500"
-            onClick={() => navigate('/jobs?status=IN_PROGRESS')}
+            onClick={() => goToJobs('IN_PROGRESS', stats.inProgressJobs)}
           />
           <StatCard
             icon={TrendingUp}
