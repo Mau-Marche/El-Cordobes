@@ -8,7 +8,7 @@ Sistema web local para gestión de clientes, vehículos, trabajos y presupuestos
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | Web server | nginx (proxy reverso + archivos estáticos)
+| Frontend | Web server NGINX | nginx (proxy reverso + archivos estáticos)
 | Backend | Node.js + Express 4 + Prisma ORM 5 + JWT + Winston |
 | Base de datos | PostgreSQL 18 |
 | Servicios Windows | NSSM (Non-Sucking Service Manager) |
