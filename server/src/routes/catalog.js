@@ -2,30 +2,54 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../config/prisma');
 const { authenticate } = require('../middleware/auth');
+const fs = require('fs');
+const path = require('path');
 
 router.use(authenticate);
 
+// Carga el catálogo desde el JSON persistido
+function loadCatalogJson() {
+  try {
+    const file = path.join(__dirname, '../../data/catalog.json');
+    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch { /* ignorar */ }
+  return [];
+}
+
 // GET /api/catalog?q=texto
-// Devuelve descripciones únicas de ítems de reparación para autocompletar
+// Busca en el catálogo JSON persistido + job_items de trabajos actuales
 router.get('/', async (req, res) => {
   try {
     const { q = '' } = req.query;
-    const q_trim = q.trim();
+    const q_trim = q.trim().toLowerCase();
 
-    // Busca en job_items descripciones únicas que coincidan con el texto
-    // Prioriza ítems de jobs SPC-GE históricos (el catálogo importado)
-    const items = await prisma.jobItem.findMany({
+    // 1. Buscar en el catálogo JSON persistido
+    const catalogJson = loadCatalogJson();
+    const fromJson = q_trim.length > 0
+      ? catalogJson.filter(d => d.toLowerCase().includes(q_trim))
+      : catalogJson;
+
+    // 2. Buscar en job_items actuales (trabajos reales, no SPC-GE)
+    const fromDb = await prisma.jobItem.findMany({
       where: q_trim.length > 0
-        ? { description: { contains: q_trim, mode: 'insensitive' } }
-        : {},
+        ? {
+            description: { contains: q_trim, mode: 'insensitive' },
+            job: { description: { not: { contains: 'SPC-GE' } } },
+          }
+        : { job: { description: { not: { contains: 'SPC-GE' } } } },
       select: { description: true },
       orderBy: { description: 'asc' },
-      take: 50,
+      take: 100,
       distinct: ['description'],
     });
 
-    const descriptions = items.map(i => i.description);
-    res.json(descriptions);
+    // Merge sin duplicados, ordenado
+    const all = [...new Set([
+      ...fromJson.slice(0, 50),
+      ...fromDb.map(i => i.description),
+    ])].sort((a, b) => a.localeCompare(b, 'es')).slice(0, 50);
+
+    res.json(all);
   } catch (err) {
     console.error('Catalog error:', err.message);
     res.status(500).json({ error: 'Error al buscar catálogo' });
