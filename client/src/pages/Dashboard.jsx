@@ -10,18 +10,23 @@ import { Users, Wrench, FileText, TrendingUp, Search, Car, Calendar } from 'luci
 
 /* ── Imágenes de autos de lujo — Unsplash ───────────────────────── */
 /* Se pide w=1400 sin recorte forzado; el <img> usa object-cover + bottom  */
+// Fotos elegidas específicamente como tomas laterales/frontales amplias
+// Sin h= ni fit=crop para no pre-recortar; CSS object-cover maneja el crop final
 const CAR_IMAGES = [
-  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Porsche 911', pos: 'center 40%' },
-  { url: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Aston Martin', pos: 'center 50%' },
-  { url: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Coupé', pos: 'center 45%' },
-  { url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Supercar', pos: 'center 40%' },
-  { url: 'https://images.unsplash.com/photo-1542362567-b07e54358753?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Porsche clásico', pos: 'center 35%' },
+  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1800&q=85', label: 'Porsche 911',    pos: 'center 38%' },
+  { url: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1800&q=85', label: 'Coupé oscuro',  pos: 'center 42%' },
+  { url: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?w=1800&q=85', label: 'Sport',         pos: 'center 50%' },
+  { url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1800&q=85', label: 'Supercar',      pos: 'center 45%' },
+  { url: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1800&q=85', label: 'Aston Martin',  pos: 'center 40%' },
 ];
 
 /* ── Stat card ─────────────────────────────────────────────────── */
-function StatCard({ icon: Icon, label, value, colorBg, colorIcon, colorAccent }) {
+function StatCard({ icon: Icon, label, value, colorBg, colorIcon, colorAccent, onClick }) {
   return (
-    <Card className="overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-200 group">
+    <Card
+      onClick={onClick}
+      className={`overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-200 group ${onClick ? 'cursor-pointer' : ''}`}
+    >
       <div className={`h-1 ${colorAccent}`} />
       <CardContent className="p-5">
         <div className="flex items-center justify-between gap-3">
@@ -33,6 +38,9 @@ function StatCard({ icon: Icon, label, value, colorBg, colorIcon, colorAccent })
             <Icon className={`h-5 w-5 ${colorIcon}`} />
           </div>
         </div>
+        {onClick && (
+          <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wide">Ver todos →</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -265,6 +273,7 @@ export default function Dashboard() {
             colorBg="bg-amber-100"
             colorIcon="text-amber-600"
             colorAccent="bg-amber-500"
+            onClick={() => navigate('/jobs?status=PENDING')}
           />
           <StatCard
             icon={Wrench}
@@ -273,6 +282,7 @@ export default function Dashboard() {
             colorBg="bg-orange-100"
             colorIcon="text-orange-600"
             colorAccent="bg-orange-500"
+            onClick={() => navigate('/jobs?status=IN_PROGRESS')}
           />
           <StatCard
             icon={TrendingUp}
