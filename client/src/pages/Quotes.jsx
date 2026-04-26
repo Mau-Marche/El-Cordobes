@@ -280,6 +280,7 @@ function buildPrintHTML(quote, workshop = {}) {
         <strong>${quote.vehicle.brand} ${quote.vehicle.model}${quote.vehicle.year ? ` (${quote.vehicle.year})` : ''}</strong><br>
         ${quote.vehicle.plate ? `Patente: <strong>${quote.vehicle.plate}</strong><br>` : ''}
         ${quote.vehicle.color ? `Color: ${quote.vehicle.color}<br>` : ''}
+        ${quote.vehicle.mileage ? `Kilometraje: ${Number(quote.vehicle.mileage).toLocaleString('es-AR')} km<br>` : ''}
         ${quote.vehicle.chassisNumber ? `Chasis: ${quote.vehicle.chassisNumber}` : ''}
       </p>
     </div>
@@ -337,8 +338,9 @@ export default function Quotes() {
   const navigate = useNavigate();
 
   // ── Estado para búsqueda de cliente / vehículo en el formulario ──
-  const [selectedClient, setSelectedClient] = useState(null);   // { id, label }
-  const [selectedVehicle, setSelectedVehicle] = useState(null); // { id, label }
+  const [selectedClient, setSelectedClient] = useState(null);     // { id, label }
+  const [selectedVehicle, setSelectedVehicle] = useState(null);   // { id, label }
+  const [selectedVehicleRaw, setSelectedVehicleRaw] = useState(null); // datos completos del vehículo
   const [clientSearchResults, setClientSearchResults] = useState([]);
   const [clientSearchLoading, setClientSearchLoading] = useState(false);
   const [vehicleResults, setVehicleResults] = useState([]);
@@ -422,12 +424,14 @@ export default function Quotes() {
   function clearClient() {
     setSelectedClient(null);
     setSelectedVehicle(null);
+    setSelectedVehicleRaw(null);
     setVehicleResults([]);
     setForm(f => ({ ...f, clientId: '', vehicleId: '' }));
   }
 
   function selectVehicle(item) {
     setSelectedVehicle(item);
+    setSelectedVehicleRaw(item.raw || null);
     setForm(f => ({ ...f, vehicleId: String(item.id) }));
     // Si el vehículo trae cliente y aún no hay cliente seleccionado, auto-seleccionarlo
     if (!selectedClient && item.raw?.client) {
@@ -441,6 +445,7 @@ export default function Quotes() {
 
   function clearVehicle() {
     setSelectedVehicle(null);
+    setSelectedVehicleRaw(null);
     setForm(f => ({ ...f, vehicleId: '' }));
   }
 
@@ -475,6 +480,7 @@ export default function Quotes() {
       // Precargar cliente y vehículo para mostrarlo en los campos
       setSelectedClient({ id: data.clientId, label: `${data.client.lastName}, ${data.client.firstName}` });
       setSelectedVehicle({ id: data.vehicleId, label: `${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.plate ? ` — ${data.vehicle.plate}` : ''}` });
+      setSelectedVehicleRaw(data.vehicle);
       loadVehicles(data.clientId);
       setDialog('edit');
     } catch {
@@ -725,6 +731,13 @@ export default function Quotes() {
                   loading={vehicleLoading}
                   disabled={false}
                 />
+                {/* Km del vehículo seleccionado */}
+                {selectedVehicleRaw?.mileage ? (
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    Kilometraje registrado: <strong>{selectedVehicleRaw.mileage.toLocaleString('es-AR')} km</strong>
+                  </p>
+                ) : null}
                 {/* Si hay cliente pero sin vehículos */}
                 {selectedClient && vehicleResults.length === 0 && !vehicleLoading && !selectedVehicle && (
                   <p className="text-xs text-amber-600 mt-1">

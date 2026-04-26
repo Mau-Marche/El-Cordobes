@@ -11,11 +11,11 @@ import { Users, Wrench, FileText, TrendingUp, Search, Car, Calendar } from 'luci
 /* ── Imágenes de autos de lujo — Unsplash ───────────────────────── */
 /* Se pide w=1400 sin recorte forzado; el <img> usa object-cover + bottom  */
 const CAR_IMAGES = [
-  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1400&q=90', label: 'Porsche 911' },
-  { url: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1400&q=90', label: 'Ferrari' },
-  { url: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1400&q=90', label: 'BMW M3' },
-  { url: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1400&q=90', label: 'Coupé' },
-  { url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1400&q=90', label: 'Supercar' },
+  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Porsche 911', pos: 'center 40%' },
+  { url: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Aston Martin', pos: 'center 50%' },
+  { url: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Coupé', pos: 'center 45%' },
+  { url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Supercar', pos: 'center 40%' },
+  { url: 'https://images.unsplash.com/photo-1542362567-b07e54358753?w=1600&h=500&fit=crop&crop=center&q=90', label: 'Porsche clásico', pos: 'center 35%' },
 ];
 
 /* ── Stat card ─────────────────────────────────────────────────── */
@@ -71,7 +71,7 @@ function HeroBanner({ workshopName = 'El Cordobés' }) {
         className="absolute inset-0 w-full h-full transition-opacity duration-500"
         style={{
           objectFit: 'cover',
-          objectPosition: 'center bottom',
+          objectPosition: current.pos || 'center 40%',
           opacity: fade ? 1 : 0,
         }}
       />
