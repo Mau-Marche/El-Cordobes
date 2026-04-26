@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+enum JobStatus {
+  PENDING
+  IN_PROGRESS
+  FINISHED
+  DELIVERED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  fullName  String
+  role      Role     @default(OPERATOR)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Client {
+  id           Int       @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  dni          String?   @unique
+  phone        String?
+  phone2       String?
+  email        String?
+  address      String?
+  notes        String?
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  vehicles     Vehicle[]
+  quotes       Quote[]
+
+  @@map("clients")
+}
+
+model Vehicle {
+  id           Int      @id @default(autoincrement())
+  clientId     Int
+  client       Client   @relation(fields: [clientId], references: [id])
+  brand        String
+  model        String
+  year         Int?
+  plate        String?  @unique
+  mileage      Int?
+  chassisNumber String?
+  engineNumber  String?
+  color        String?
+  notes        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  jobs         Job[]
+  quotes       Quote[]
+
+  @@map("vehicles")
+}
+
+model Job {
+  id          Int        @id @default(autoincrement())
+  vehicleId   Int
+  vehicle     Vehicle    @relation(fields: [vehicleId], references: [id])
+  quoteId     Int?
+  date        DateTime   @default(now())
+  description String
+  mileageIn   Int?
+  mileageOut  Int?
+  laborCost   Decimal    @default(0) @db.Decimal(10, 2)
+  totalCost   Decimal    @default(0) @db.Decimal(10, 2)
+  status      JobStatus  @default(PENDING)
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  items       JobItem[]
+  attachments Attachment[]
+
+  @@map("jobs")
+}
+
+model JobItem {
+  id          Int     @id @default(autoincrement())
+  jobId       Int
+  job         Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  subtotal    Decimal @db.Decimal(10, 2)
+
+  @@map("job_items")
+}
+
+model Quote {
+  id          Int         @id @default(autoincrement())
+  number      String      @unique
+  clientId    Int
+  client      Client      @relation(fields: [clientId], references: [id])
+  vehicleId   Int
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id])
+  date        DateTime    @default(now())
+  validUntil  DateTime?
+  status      QuoteStatus @default(DRAFT)
+  notes       String?
+  laborCost   Decimal     @default(0) @db.Decimal(10, 2)
+  total       Decimal     @default(0) @db.Decimal(10, 2)
+  pdfPath     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       QuoteItem[]
+
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          Int     @id @default(autoincrement())
+  quoteId     Int
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  subtotal    Decimal @db.Decimal(10, 2)
+
+  @@map("quote_items")
+}
+
+model Attachment {
+  id          Int      @id @default(autoincrement())
+  jobId       Int
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  filename    String
+  originalName String
+  mimetype    String
+  size        Int
+  path        String
+  createdAt   DateTime @default(now())
+
+  @@map("attachments")
+}
+
+model MigrationLog {
+  id          Int      @id @default(autoincrement())
+  filename    String
+  status      String
+  totalRows   Int      @default(0)
+  imported    Int      @default(0)
+  skipped     Int      @default(0)
+  errors      Int      @default(0)
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  @@map("migration_logs")
+}

@@ -1,0 +1,36 @@
+# Dependencias
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Variables de entorno (contienen contraseñas)
+.env
+server/.env
+client/.env
+
+# Build del frontend (se genera con npm run build)
+server/public/
+client/dist/
+
+# Uploads de usuarios (fotos y PDFs adjuntos)
+server/uploads/
+
+# Backups de la base de datos
+server/backups/
+
+# Logs del servicio Windows
+server/logs/
+
+# NSSM (ejecutable de terceros, no pertenece al repo)
+scripts/nssm.exe
+
+# Archivos de sistema y editores
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.vscode/
+.idea/
+
+# Prisma (generado automáticamente)
+server/prisma/generated/
