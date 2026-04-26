@@ -26,7 +26,6 @@ router.get('/', async (req, res) => {
         orderBy: { date: 'desc' },
         include: {
           vehicle: {
-            select: { brand: true, model: true, plate: true },
             include: { client: { select: { firstName: true, lastName: true } } },
           },
         },

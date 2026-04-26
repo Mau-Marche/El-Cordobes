@@ -10,11 +10,85 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
-import { Plus, Search, Edit, Trash2, Printer, ArrowRight, ChevronLeft, ChevronRight, X, Loader2, BookOpen } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Printer, ArrowRight, ChevronLeft, ChevronRight, X, Loader2, BookOpen, User, Car } from 'lucide-react';
 import { formatCurrency, formatDate, QUOTE_STATUS } from '@/lib/utils';
 
 const EMPTY_FORM = { clientId: '', vehicleId: '', validUntil: '', notes: '', laborCost: '0', status: 'DRAFT', items: [] };
 const EMPTY_ITEM = { description: '', quantity: '1', unitPrice: '0', subtotal: '0' };
+
+/* ── Autocomplete genérico ──────────────────────────────────────── */
+function SearchDropdown({ icon: Icon, placeholder, value, onSearch, onSelect, onClear, disabled = false, results, loading }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  // Sincronizar query con búsqueda
+  useEffect(() => {
+    if (!query || query.length < 1) { onSearch(''); return; }
+    const t = setTimeout(() => onSearch(query), 280);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // Si hay value elegido, no mostramos el input de búsqueda
+  if (value) {
+    return (
+      <div className="flex items-center gap-2 border rounded-md px-3 py-2 bg-slate-50">
+        {Icon && <Icon className="h-4 w-4 text-slate-400 shrink-0" />}
+        <span className="flex-1 text-sm font-medium text-slate-800 truncate">{value}</span>
+        {!disabled && (
+          <button type="button" onClick={() => { onClear(); setQuery(''); }} className="text-slate-400 hover:text-red-500 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-2 border rounded-md px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-0">
+        {Icon && <Icon className="h-4 w-4 text-slate-400 shrink-0" />}
+        <input
+          type="text"
+          disabled={disabled}
+          placeholder={disabled ? 'Primero elegí un cliente' : placeholder}
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => query.length >= 1 && setOpen(true)}
+          className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        />
+        {loading && <Loader2 className="h-4 w-4 animate-spin text-slate-400 shrink-0" />}
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border rounded-lg shadow-xl max-h-60 overflow-y-auto">
+          {results.map((item, i) => (
+            <button
+              key={i}
+              type="button"
+              onMouseDown={() => { onSelect(item); setQuery(''); setOpen(false); }}
+              className="w-full text-left px-4 py-2.5 text-sm hover:bg-orange-50 hover:text-orange-700 transition-colors border-b last:border-0"
+            >
+              {item.label}
+              {item.sub && <span className="block text-xs text-slate-400">{item.sub}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+      {open && results.length === 0 && query.length >= 2 && !loading && (
+        <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border rounded-lg shadow-xl px-4 py-3 text-sm text-muted-foreground">
+          Sin resultados para "{query}"
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ── Buscador de catálogo de ítems ─────────────────────────────── */
 function CatalogSearch({ onSelect }) {
@@ -36,7 +110,6 @@ function CatalogSearch({ onSelect }) {
     return () => clearTimeout(t);
   }, [query]);
 
-  // Cerrar al hacer click fuera
   useEffect(() => {
     function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
     document.addEventListener('mousedown', handler);
@@ -55,7 +128,7 @@ function CatalogSearch({ onSelect }) {
       <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-dashed border-slate-300">
         <BookOpen className="h-4 w-4 text-slate-400 shrink-0" />
         <Input
-          placeholder="Buscar en catálogo de reparaciones (ej: aceite, frenos, alineación...)"
+          placeholder="Buscar en catálogo (ej: aceite, frenos, alineación...)"
           value={query}
           onChange={e => setQuery(e.target.value)}
           className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 shadow-none"
@@ -65,12 +138,8 @@ function CatalogSearch({ onSelect }) {
       {open && results.length > 0 && (
         <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border rounded-lg shadow-xl max-h-56 overflow-y-auto">
           {results.map((desc, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => select(desc)}
-              className="w-full text-left px-4 py-2.5 text-sm hover:bg-orange-50 hover:text-orange-700 transition-colors border-b last:border-0"
-            >
+            <button key={i} type="button" onClick={() => select(desc)}
+              className="w-full text-left px-4 py-2.5 text-sm hover:bg-orange-50 hover:text-orange-700 transition-colors border-b last:border-0">
               {desc}
             </button>
           ))}
@@ -160,7 +229,6 @@ function buildPrintHTML(quote, workshop = {}) {
 <body>
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px">
-      <!-- Logo SVG del taller -->
       <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
         <circle cx="32" cy="32" r="30" fill="#f97316"/>
         <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4 3"/>
@@ -255,14 +323,19 @@ export default function Quotes() {
   const [dialog, setDialog] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [clients, setClients] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [printing, setPrinting] = useState(null);
   const [workshopData, setWorkshopData] = useState({});
   const navigate = useNavigate();
 
-  // Cargar datos del taller para el print
+  // ── Estado para búsqueda de cliente / vehículo en el formulario ──
+  const [selectedClient, setSelectedClient] = useState(null);   // { id, label }
+  const [selectedVehicle, setSelectedVehicle] = useState(null); // { id, label }
+  const [clientSearchResults, setClientSearchResults] = useState([]);
+  const [clientSearchLoading, setClientSearchLoading] = useState(false);
+  const [vehicleResults, setVehicleResults] = useState([]);
+  const [vehicleLoading, setVehicleLoading] = useState(false);
+
   useEffect(() => {
     settingsApi.get().then(r => setWorkshopData(r.data)).catch(() => {});
   }, []);
@@ -282,18 +355,94 @@ export default function Quotes() {
   useEffect(() => { fetchQuotes(); }, [fetchQuotes]);
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
-  useEffect(() => {
-    clientsApi.list({ limit: 200 }).then(r => setClients(r.data.data)).catch(() => {});
-  }, []);
+  // Buscar clientes al tipear
+  async function searchClients(q) {
+    if (!q || q.length < 2) { setClientSearchResults([]); return; }
+    setClientSearchLoading(true);
+    try {
+      const { data } = await clientsApi.list({ search: q, limit: 10 });
+      setClientSearchResults((data.data || []).map(c => ({
+        id: c.id,
+        label: `${c.lastName}, ${c.firstName}`,
+        sub: [c.phone, c.dni].filter(Boolean).join(' · '),
+        raw: c,
+      })));
+    } catch { setClientSearchResults([]); }
+    finally { setClientSearchLoading(false); }
+  }
 
-  useEffect(() => {
-    if (!form.clientId) { setVehicles([]); return; }
-    vehiclesApi.list({ clientId: form.clientId, limit: 50 }).then(r => setVehicles(r.data.data)).catch(() => {});
-  }, [form.clientId]);
+  // Cargar vehículos del cliente seleccionado
+  async function loadVehicles(clientId) {
+    if (!clientId) { setVehicleResults([]); return; }
+    setVehicleLoading(true);
+    try {
+      const { data } = await vehiclesApi.list({ clientId, limit: 50 });
+      setVehicleResults((data.data || []).map(v => ({
+        id: v.id,
+        label: `${v.brand} ${v.model}${v.plate ? ` — ${v.plate}` : ''}`,
+        sub: v.year ? `Año ${v.year}` : '',
+        raw: v,
+      })));
+    } catch { setVehicleResults([]); }
+    finally { setVehicleLoading(false); }
+  }
+
+  // Buscar vehículos por patente/marca cuando no hay cliente aún
+  async function searchVehicles(q) {
+    if (selectedClient) return; // Si ya hay cliente, usamos vehicleResults
+    if (!q || q.length < 2) { setVehicleResults([]); return; }
+    setVehicleLoading(true);
+    try {
+      const { data } = await vehiclesApi.list({ search: q, limit: 10 });
+      setVehicleResults((data.data || []).map(v => ({
+        id: v.id,
+        label: `${v.brand} ${v.model}${v.plate ? ` — ${v.plate}` : ''}`,
+        sub: v.client ? `${v.client.lastName}, ${v.client.firstName}` : '',
+        raw: v,
+      })));
+    } catch { setVehicleResults([]); }
+    finally { setVehicleLoading(false); }
+  }
+
+  function selectClient(item) {
+    setSelectedClient(item);
+    setSelectedVehicle(null);
+    setForm(f => ({ ...f, clientId: String(item.id), vehicleId: '' }));
+    loadVehicles(item.id);
+  }
+
+  function clearClient() {
+    setSelectedClient(null);
+    setSelectedVehicle(null);
+    setVehicleResults([]);
+    setForm(f => ({ ...f, clientId: '', vehicleId: '' }));
+  }
+
+  function selectVehicle(item) {
+    setSelectedVehicle(item);
+    setForm(f => ({ ...f, vehicleId: String(item.id) }));
+    // Si el vehículo trae cliente y aún no hay cliente seleccionado, auto-seleccionarlo
+    if (!selectedClient && item.raw?.client) {
+      const c = item.raw.client;
+      const clientItem = { id: item.raw.clientId, label: `${c.lastName}, ${c.firstName}` };
+      setSelectedClient(clientItem);
+      setForm(f => ({ ...f, clientId: String(item.raw.clientId), vehicleId: String(item.id) }));
+      loadVehicles(item.raw.clientId);
+    }
+  }
+
+  function clearVehicle() {
+    setSelectedVehicle(null);
+    setForm(f => ({ ...f, vehicleId: '' }));
+  }
 
   function openCreate() {
     setForm(EMPTY_FORM);
     setSelected(null);
+    setSelectedClient(null);
+    setSelectedVehicle(null);
+    setClientSearchResults([]);
+    setVehicleResults([]);
     setDialog('create');
   }
 
@@ -315,13 +464,25 @@ export default function Quotes() {
         })),
       });
       setSelected(data);
+      // Precargar cliente y vehículo para mostrarlo en los campos
+      setSelectedClient({ id: data.clientId, label: `${data.client.lastName}, ${data.client.firstName}` });
+      setSelectedVehicle({ id: data.vehicleId, label: `${data.vehicle.brand} ${data.vehicle.model}${data.vehicle.plate ? ` — ${data.vehicle.plate}` : ''}` });
+      loadVehicles(data.clientId);
       setDialog('edit');
     } catch {
       toast({ title: 'Error al cargar el presupuesto', variant: 'error' });
     }
   }
 
-  function closeDialog() { setDialog(null); setSelected(null); }
+  function closeDialog() {
+    setDialog(null);
+    setSelected(null);
+    setSelectedClient(null);
+    setSelectedVehicle(null);
+    setClientSearchResults([]);
+    setVehicleResults([]);
+  }
+
   function setField(name, value) { setForm(f => ({ ...f, [name]: value })); }
   function addItem() { setForm(f => ({ ...f, items: [...f.items, { ...EMPTY_ITEM }] })); }
 
@@ -472,13 +633,8 @@ export default function Quotes() {
                           <Button size="icon" variant="ghost" onClick={() => openEdit(q)} title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handlePrint(q)}
-                            disabled={printing === q.id}
-                            title="Imprimir / Guardar PDF"
-                          >
+                          <Button size="icon" variant="ghost" onClick={() => handlePrint(q)}
+                            disabled={printing === q.id} title="Imprimir / Guardar PDF">
                             {printing === q.id
                               ? <Loader2 className="h-4 w-4 animate-spin" />
                               : <Printer className="h-4 w-4" />
@@ -526,45 +682,52 @@ export default function Quotes() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Cliente / vehículo / estado / fecha */}
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+
+            {/* ── Cliente y Vehículo con búsqueda ── */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Cliente *</label>
-                <Select
-                  className="mt-1"
-                  value={form.clientId}
-                  onChange={e => { setField('clientId', e.target.value); setField('vehicleId', ''); }}
-                >
-                  <option value="">Seleccionar cliente...</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.lastName}, {c.firstName}</option>
-                  ))}
-                </Select>
+                <label className="text-sm font-medium block mb-1">
+                  Cliente *
+                </label>
+                <SearchDropdown
+                  icon={User}
+                  placeholder="Buscar por nombre, DNI o teléfono..."
+                  value={selectedClient?.label}
+                  onSearch={searchClients}
+                  onSelect={selectClient}
+                  onClear={clearClient}
+                  results={clientSearchResults}
+                  loading={clientSearchLoading}
+                />
               </div>
               <div>
-                <label className="text-sm font-medium">Vehículo *</label>
-                <Select
-                  className="mt-1"
-                  value={form.vehicleId}
-                  onChange={e => setField('vehicleId', e.target.value)}
-                  disabled={!form.clientId}
-                >
-                  <option value="">
-                    {form.clientId ? 'Seleccionar vehículo...' : 'Primero elegí un cliente'}
-                  </option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id}>
-                      {v.brand} {v.model}{v.plate ? ` — ${v.plate}` : ''}
-                    </option>
-                  ))}
-                </Select>
-                {form.clientId && vehicles.length === 0 && (
+                <label className="text-sm font-medium block mb-1">
+                  Vehículo *
+                  {!selectedClient && <span className="text-xs text-slate-400 font-normal ml-1">(o buscá por patente)</span>}
+                </label>
+                <SearchDropdown
+                  icon={Car}
+                  placeholder={selectedClient ? 'Seleccionar vehículo...' : 'Buscar por patente o marca...'}
+                  value={selectedVehicle?.label}
+                  onSearch={selectedClient ? () => {} : searchVehicles}
+                  onSelect={selectVehicle}
+                  onClear={clearVehicle}
+                  results={selectedClient ? vehicleResults : vehicleResults}
+                  loading={vehicleLoading}
+                  disabled={false}
+                />
+                {/* Si hay cliente pero sin vehículos */}
+                {selectedClient && vehicleResults.length === 0 && !vehicleLoading && !selectedVehicle && (
                   <p className="text-xs text-amber-600 mt-1">
-                    Este cliente no tiene vehículos. Agregá uno desde la sección Vehículos.
+                    Este cliente no tiene vehículos registrados.
                   </p>
                 )}
               </div>
+            </div>
+
+            {/* ── Estado y fecha ── */}
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Estado</label>
                 <Select className="mt-1" value={form.status} onChange={e => setField('status', e.target.value)}>
@@ -580,7 +743,7 @@ export default function Quotes() {
               </div>
             </div>
 
-            {/* Ítems */}
+            {/* ── Ítems / Repuestos ── */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium">Ítems / Repuestos</label>
@@ -606,31 +769,20 @@ export default function Quotes() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Input
-                        type="number"
-                        placeholder="Cant."
-                        min="0"
-                        step="0.01"
+                      <Input type="number" placeholder="Cant." min="0" step="0.01"
                         value={item.quantity}
                         onChange={e => updateItem(idx, 'quantity', e.target.value)}
                       />
                     </div>
                     <div className="col-span-2">
-                      <Input
-                        type="number"
-                        placeholder="P.Unit."
-                        min="0"
-                        step="0.01"
+                      <Input type="number" placeholder="P.Unit." min="0" step="0.01"
                         value={item.unitPrice}
                         onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
                       />
                     </div>
                     <div className="col-span-2">
-                      <Input
-                        readOnly
-                        value={formatCurrency(parseFloat(item.subtotal) || 0)}
-                        className="bg-slate-50 text-right text-sm"
-                      />
+                      <Input readOnly value={formatCurrency(parseFloat(item.subtotal) || 0)}
+                        className="bg-slate-50 text-right text-sm" />
                     </div>
                     <div className="col-span-1 flex justify-center">
                       <Button size="icon" variant="ghost" onClick={() => removeItem(idx)} className="text-destructive h-8 w-8">
@@ -641,21 +793,17 @@ export default function Quotes() {
                 ))}
                 {form.items.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-3 border border-dashed rounded-lg">
-                    Sin ítems. Hacé clic en "Agregar ítem".
+                    Sin ítems. Buscá en el catálogo o hacé clic en "Ítem en blanco".
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Mano de obra y total */}
+            {/* ── Mano de obra y total ── */}
             <div className="grid grid-cols-2 gap-3 items-end">
               <div>
                 <label className="text-sm font-medium">Mano de obra ($)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="mt-1"
+                <Input type="number" min="0" step="0.01" className="mt-1"
                   value={form.laborCost}
                   onChange={e => setField('laborCost', e.target.value)}
                 />
@@ -666,12 +814,10 @@ export default function Quotes() {
               </div>
             </div>
 
-            {/* Observaciones */}
+            {/* ── Observaciones ── */}
             <div>
               <label className="text-sm font-medium">Observaciones</label>
-              <Textarea
-                className="mt-1"
-                rows={2}
+              <Textarea className="mt-1" rows={2}
                 value={form.notes}
                 onChange={e => setField('notes', e.target.value)}
                 placeholder="Notas adicionales..."
