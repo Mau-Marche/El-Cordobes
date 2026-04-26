@@ -8,10 +8,11 @@ Sistema web local para gestión de clientes, vehículos, trabajos y presupuestos
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | React 18 + Vite 5 + Tailwind CSS 3 + Zustand |
-| Backend | Node.js + Express 4 + Prisma ORM 5 |
+| Frontend | React 18 + Vite 5 + Tailwind CSS 3 + Zustand + Axios + React Router 6 |
+| Backend | Node.js + Express 4 + Prisma ORM 5 + JWT + Winston |
 | Base de datos | PostgreSQL 18 |
 | Web server | nginx (proxy reverso + archivos estáticos) |
+| Servicios Windows | NSSM (Non-Sucking Service Manager) |
 | PDF | `window.print()` con estilos de impresión |
 
 ---
@@ -176,21 +177,65 @@ Credenciales por defecto: `admin` / `admin123` (cambiar desde Configuración)
 
 ```
 el-cordobes/
-├── client/              # Frontend React + Vite
+├── client/                        # Frontend React + Vite
 │   └── src/
-│       ├── pages/       # Dashboard, Clientes, Vehículos, Trabajos, Presupuestos, Settings
-│       ├── components/  # Layout, UI reutilizable
-│       └── lib/         # api.js, utils.js
-├── server/              # Backend Node.js + Express
+│       ├── main.jsx               # Punto de entrada
+│       ├── App.jsx                # Rutas (React Router 6)
+│       ├── pages/
+│       │   ├── Login.jsx
+│       │   ├── Dashboard.jsx
+│       │   ├── Clients.jsx        # Lista + CRUD de clientes y vehículos
+│       │   ├── ClientDetail.jsx
+│       │   ├── VehicleDetail.jsx
+│       │   ├── Jobs.jsx
+│       │   ├── JobDetail.jsx
+│       │   ├── Quotes.jsx
+│       │   └── Settings.jsx
+│       ├── components/
+│       │   ├── layout/            # AppLayout, Sidebar, PageHeader
+│       │   └── ui/                # button, card, dialog, input, select, table, toast, badge
+│       ├── lib/
+│       │   ├── api.js             # Axios + interceptor JWT + todos los endpoints
+│       │   ├── utils.js           # formatCurrency, formatDate, JOB_STATUS, QUOTE_STATUS
+│       │   └── car-brands.js      # Marcas y modelos para autocompletar
+│       └── store/
+│           └── authStore.js       # Zustand — estado de autenticación
+├── server/                        # Backend Node.js + Express
 │   ├── src/
-│   │   ├── routes/      # auth, clients, vehicles, jobs, quotes, dashboard, settings, catalog
-│   │   ├── middleware/  # auth JWT
-│   │   └── config/      # Prisma client
-│   ├── prisma/          # Schema y migraciones
-│   ├── data/            # settings.json (datos del taller)
-│   └── public/          # Frontend compilado (generado por npm run build)
-├── scripts/             # Scripts de instalación y administración
-└── ADMINISTRAR.bat      # Panel de control para el usuario
+│   │   ├── index.js               # Entry point Express
+│   │   ├── routes/
+│   │   │   ├── auth.js            # POST /login, GET /me, POST /change-password
+│   │   │   ├── users.js           # CRUD usuarios
+│   │   │   ├── clients.js         # CRUD clientes
+│   │   │   ├── vehicles.js        # CRUD vehículos
+│   │   │   ├── jobs.js            # CRUD trabajos + adjuntos
+│   │   │   ├── quotes.js          # CRUD presupuestos + conversión a trabajo
+│   │   │   ├── dashboard.js       # Estadísticas + búsqueda global
+│   │   │   ├── settings.js        # Datos del taller (lee/escribe settings.json)
+│   │   │   └── catalog.js         # Buscador de ítems de reparación
+│   │   ├── middleware/
+│   │   │   └── auth.js            # JWT authenticate + requireAdmin
+│   │   ├── config/
+│   │   │   └── prisma.js          # Cliente Prisma singleton
+│   │   ├── services/
+│   │   │   └── pdfGenerator.js    # (legacy, reemplazado por window.print)
+│   │   └── utils/
+│   │       └── logger.js          # Winston logger
+│   ├── prisma/
+│   │   └── schema.prisma          # Modelos: User, Client, Vehicle, Job, Quote, etc.
+│   ├── data/
+│   │   ├── settings.json          # Nombre, dirección, teléfono, CUIT del taller
+│   │   └── car-brands.json        # Marcas y modelos para autocompletar
+│   └── public/                    # Frontend compilado (salida de npm run build)
+├── scripts/
+│   ├── nginx.conf                 # Configuración nginx lista para C:\nginx\conf\
+│   ├── instalar-servicios.bat     # Instala backend + nginx como servicios (admin)
+│   ├── build-y-recargar.bat       # Compila frontend y recarga nginx
+│   ├── build-produccion-solo.bat  # Solo compila el frontend
+│   ├── configurar-dns.bat         # Agrega taller.local al archivo hosts
+│   ├── desinstalar-servicio.bat   # Desinstala los servicios
+│   └── backup.bat                 # Copia de seguridad de la base de datos
+└── ADMINISTRAR.bat                # Panel de control para el usuario (requiere admin)
 ```
 
 ---
