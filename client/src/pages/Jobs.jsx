@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { jobsApi, vehiclesApi, catalogApi } from '@/lib/api';
+import { jobsApi, vehiclesApi } from '@/lib/api';
+import { DescriptionSearch } from '@/components/ui/DescriptionSearch';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,47 +16,6 @@ import { formatCurrency, formatDate, JOB_STATUS } from '@/lib/utils';
 
 const EMPTY_FORM = { vehicleId: '', date: new Date().toISOString().slice(0, 10), description: '', mileageIn: '', mileageOut: '', laborCost: '0', status: 'PENDING', notes: '', items: [] };
 const EMPTY_ITEM = { description: '', quantity: '1', unitPrice: '', subtotal: '0' };
-
-/* ── Buscador con autocompletar para la descripción del trabajo ── */
-function DescriptionSearch({ value, onChange }) {
-  const [suggestions, setSuggestions] = useState([]);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!value || value.length < 2) { setSuggestions([]); setOpen(false); return; }
-    const t = setTimeout(() => {
-      catalogApi.search(value)
-        .then(r => { setSuggestions(r.data || []); setOpen((r.data || []).length > 0); })
-        .catch(() => {});
-    }, 250);
-    return () => clearTimeout(t);
-  }, [value]);
-
-  return (
-    <div className="relative mt-1">
-      <Textarea
-        rows={2}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder="Escribí para buscar en el catálogo o ingresá libremente..."
-      />
-      {open && (
-        <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border rounded-lg shadow-lg max-h-52 overflow-y-auto">
-          {suggestions.map((s, i) => (
-            <button
-              key={i}
-              type="button"
-              className="w-full text-left px-3 py-2 text-sm hover:bg-orange-50 border-b last:border-0 truncate"
-              onMouseDown={e => { e.preventDefault(); onChange(s); setOpen(false); setSuggestions([]); }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function Jobs() {
   const [jobs, setJobs] = useState([]);

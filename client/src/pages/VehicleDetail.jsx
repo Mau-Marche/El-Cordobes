@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { vehiclesApi, jobsApi } from '@/lib/api';
+import { DescriptionSearch } from '@/components/ui/DescriptionSearch';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +46,20 @@ export default function VehicleDetail() {
 
   useEffect(() => { load(); }, [id]);
 
+  function openJobDialog() {
+    setJobForm(f => ({
+      ...f,
+      date: new Date().toISOString().slice(0, 10),
+      description: '',
+      mileageIn: vehicle?.mileage ? String(vehicle.mileage) : '',
+      laborCost: '0',
+      status: 'PENDING',
+      notes: '',
+      items: [],
+    }));
+    openJobDialog();
+  }
+
   async function saveJob() {
     if (!jobForm.description) {
       toast({ title: 'La descripción es requerida', variant: 'error' });
@@ -76,7 +91,7 @@ export default function VehicleDetail() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/vehicles')}><ArrowLeft className="h-4 w-4" />Volver</Button>
-            <Button onClick={() => setNewJobDialog(true)}><Plus className="h-4 w-4" />Nuevo trabajo</Button>
+            <Button onClick={() => openJobDialog()}><Plus className="h-4 w-4" />Nuevo trabajo</Button>
           </div>
         }
       />
@@ -142,7 +157,7 @@ export default function VehicleDetail() {
             <CardTitle className="text-base flex items-center gap-2">
               <Wrench className="h-4 w-4" /> Historial de trabajos
             </CardTitle>
-            <Button size="sm" onClick={() => setNewJobDialog(true)} variant="outline">
+            <Button size="sm" onClick={() => openJobDialog()} variant="outline">
               <Plus className="h-3 w-3" /> Nuevo trabajo
             </Button>
           </CardHeader>
@@ -151,7 +166,7 @@ export default function VehicleDetail() {
               <div className="text-center py-10">
                 <Wrench className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">Sin trabajos registrados para este vehículo</p>
-                <Button className="mt-3" size="sm" onClick={() => setNewJobDialog(true)}>
+                <Button className="mt-3" size="sm" onClick={() => openJobDialog()}>
                   <Plus className="h-4 w-4" /> Registrar primer trabajo
                 </Button>
               </div>
@@ -243,7 +258,11 @@ export default function VehicleDetail() {
             </div>
             <div>
               <label className="text-sm font-medium">Descripción del trabajo *</label>
-              <Textarea className="mt-1" rows={3} value={jobForm.description} onChange={e => setJobForm(f => ({ ...f, description: e.target.value }))} placeholder="Detallá el trabajo realizado..." />
+              <DescriptionSearch
+                value={jobForm.description}
+                onChange={v => setJobForm(f => ({ ...f, description: v }))}
+                rows={3}
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Observaciones internas</label>
