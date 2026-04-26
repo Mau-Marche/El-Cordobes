@@ -8,10 +8,9 @@ Sistema web local para gestión de clientes, vehículos, trabajos y presupuestos
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | React 18 + Vite 5 + Tailwind CSS 3 + Zustand + Axios + React Router 6 |
+| Frontend | Web server | nginx (proxy reverso + archivos estáticos)
 | Backend | Node.js + Express 4 + Prisma ORM 5 + JWT + Winston |
 | Base de datos | PostgreSQL 18 |
-| Web server | nginx (proxy reverso + archivos estáticos) |
 | Servicios Windows | NSSM (Non-Sucking Service Manager) |
 | PDF | `window.print()` con estilos de impresión |
 
