@@ -3,14 +3,13 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { WorkshopLogo } from '@/components/ui/WorkshopLogo';
 import {
-  LayoutDashboard, Users, Car, Wrench, FileText,
+  LayoutDashboard, Users, Wrench, FileText,
   Settings, LogOut,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/clients', icon: Users, label: 'Clientes' },
-  { to: '/vehicles', icon: Car, label: 'Vehículos' },
+  { to: '/clients', icon: Users, label: 'Clientes y Vehículos' },
   { to: '/jobs', icon: Wrench, label: 'Trabajos' },
   { to: '/quotes', icon: FileText, label: 'Presupuestos' },
 ];

@@ -4,7 +4,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
-import Vehicles from './pages/Vehicles';
 import VehicleDetail from './pages/VehicleDetail';
 import Jobs from './pages/Jobs';
 import JobDetail from './pages/JobDetail';
@@ -21,7 +20,8 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/clients/:id" element={<ClientDetail />} />
-          <Route path="/vehicles" element={<Vehicles />} />
+          {/* /vehicles redirige a /clients — la lista unificada */}
+          <Route path="/vehicles" element={<Navigate to="/clients" replace />} />
           <Route path="/vehicles/:id" element={<VehicleDetail />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
