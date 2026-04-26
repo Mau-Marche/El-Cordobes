@@ -1,26 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import { WorkshopLogo } from '@/components/ui/WorkshopLogo';
 import {
   LayoutDashboard, Users, Car, Wrench, FileText,
   Settings, LogOut,
 } from 'lucide-react';
-
-/* ── Logo SVG del taller (versión compacta) ──────────────────────── */
-function TallerLogo() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="32" cy="32" r="30" fill="#f97316" />
-      <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="4 3" />
-      {/* Llave inglesa */}
-      <path
-        d="M19 45 L37 27 M37 27 C39 23 44 21 47 23 C45 25 43 25 42 27 C41 29 42 31 44 31 C42 33 39 33 37 31 C35 29 35 26 37 27Z"
-        stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
-      />
-      <circle cx="21" cy="43" r="3" fill="#fff" />
-    </svg>
-  );
-}
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -84,7 +69,7 @@ export function Sidebar() {
       {/* ── Logo / Nombre del taller ── */}
       <div className="px-5 py-5 border-b border-white/8">
         <div className="flex items-center gap-3">
-          <TallerLogo />
+          <WorkshopLogo size={38} uid="sidebar" />
           <div>
             <h1 className="font-black text-white text-base leading-tight tracking-tight">El Cordobés</h1>
             <p className="text-orange-400 text-[10px] font-semibold uppercase tracking-widest mt-0.5">

@@ -230,11 +230,19 @@ function buildPrintHTML(quote, workshop = {}) {
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px">
       <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-        <circle cx="32" cy="32" r="30" fill="#f97316"/>
-        <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4 3"/>
-        <path d="M19 45 L37 27 M37 27 C39 23 44 21 47 23 C45 25 43 25 42 27 C41 29 42 31 44 31 C42 33 39 33 37 31 C35 29 35 26 37 27Z"
-          stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <circle cx="21" cy="43" r="3" fill="white"/>
+        <defs>
+          <radialGradient id="pg" cx="38%" cy="30%" r="68%">
+            <stop offset="0%" stop-color="#fb923c"/>
+            <stop offset="60%" stop-color="#ea580c"/>
+            <stop offset="100%" stop-color="#9a3412"/>
+          </radialGradient>
+        </defs>
+        <circle cx="32" cy="32" r="31" fill="url(#pg)"/>
+        <circle cx="32" cy="32" r="29.5" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <g transform="rotate(-45, 32, 32)">
+          <path d="M 12 20 Q 10 20 10 22 L 10 26 L 27 26 L 27 38 L 10 38 L 10 42 Q 10 44 12 44 L 30 44 L 30 37 L 52 37 Q 57 37 57 32 Q 57 27 52 27 L 30 27 L 30 20 L 12 20 Z"
+            fill="white"/>
+        </g>
       </svg>
       <div>
         <div class="workshop-name">${workshopName}</div>

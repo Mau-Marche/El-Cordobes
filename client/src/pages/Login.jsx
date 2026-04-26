@@ -5,25 +5,7 @@ import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-/* ── Logo SVG del taller ─────────────────────────────────────────── */
-function WorkshopLogo({ size = 64 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Círculo exterior */}
-      <circle cx="32" cy="32" r="30" fill="#f97316" />
-      <circle cx="32" cy="32" r="27" fill="none" stroke="#fff" strokeWidth="1.5" strokeDasharray="4 3" />
-      {/* Llave inglesa */}
-      <path
-        d="M20 44 L38 26 M38 26 C40 22 45 20 48 22 C46 24 44 24 43 26 C42 28 43 30 45 30 C43 32 40 32 38 30 C36 28 36 25 38 26Z"
-        stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
-      />
-      <circle cx="22" cy="42" r="3" fill="#fff" />
-      {/* Tornillo arriba */}
-      <circle cx="44" cy="20" r="2.5" fill="#fff" opacity="0.8" />
-    </svg>
-  );
-}
+import { WorkshopLogo } from '@/components/ui/WorkshopLogo';
 
 /* ── Auto SVG de perfil ─────────────────────────────────────────── */
 function CarSilhouette() {
@@ -140,7 +122,7 @@ export default function Login() {
         {/* Contenido */}
         <div className="relative z-10 flex flex-col items-center gap-8 px-12 text-center">
           {/* Logo */}
-          <WorkshopLogo size={96} />
+          <WorkshopLogo size={96} uid="login-lg" />
 
           {/* Nombre */}
           <div>
@@ -177,7 +159,7 @@ export default function Login() {
 
         {/* Logo mobile */}
         <div className="lg:hidden flex flex-col items-center mb-8 gap-3">
-          <WorkshopLogo size={72} />
+          <WorkshopLogo size={72} uid="login-sm" />
           <h1 className="text-3xl font-black text-[#0f2035]">El Cordobés</h1>
           <p className="text-sm text-slate-500 uppercase tracking-widest">Taller Automotriz</p>
         </div>
