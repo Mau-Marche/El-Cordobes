@@ -9,32 +9,13 @@ import { formatCurrency, formatDate, JOB_STATUS, QUOTE_STATUS, clientFullName, v
 import { Users, Wrench, FileText, TrendingUp, Search, Car, Calendar } from 'lucide-react';
 
 /* ── Imágenes de autos de lujo — Unsplash ───────────────────────── */
+/* Se pide w=1400 sin recorte forzado; el <img> usa object-cover + bottom  */
 const CAR_IMAGES = [
-  {
-    url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1400&q=90&fit=crop&crop=bottom',
-    pos: 'center 65%',
-    label: 'Porsche 911',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1400&q=90&fit=crop&crop=center',
-    pos: 'center 60%',
-    label: 'Ferrari',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1400&q=90&fit=crop&crop=bottom',
-    pos: 'center 70%',
-    label: 'BMW M3',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1400&q=90&fit=crop&crop=bottom',
-    pos: 'center 75%',
-    label: 'Luxury',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1400&q=90&fit=crop&crop=bottom',
-    pos: 'center 60%',
-    label: 'Supercar',
-  },
+  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1400&q=90', label: 'Porsche 911' },
+  { url: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1400&q=90', label: 'Ferrari' },
+  { url: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1400&q=90', label: 'BMW M3' },
+  { url: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1400&q=90', label: 'Coupé' },
+  { url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1400&q=90', label: 'Supercar' },
 ];
 
 /* ── Stat card ─────────────────────────────────────────────────── */
@@ -79,14 +60,18 @@ function HeroBanner({ workshopName = 'El Cordobés' }) {
   });
 
   return (
-    <div className="relative h-72 rounded-2xl overflow-hidden shadow-lg mb-6">
-
-      {/* ── Imagen de fondo ── */}
-      <div
-        className="absolute inset-0 bg-cover transition-opacity duration-500"
+    <div className="relative h-72 rounded-2xl overflow-hidden shadow-lg mb-6"
+      style={{ backgroundColor: '#0a1628' }}
+    >
+      {/* ── Imagen: object-cover + bottom garantiza que el auto (abajo) no se corta ── */}
+      <img
+        key={imgIdx}
+        src={current.url}
+        alt={current.label}
+        className="absolute inset-0 w-full h-full transition-opacity duration-500"
         style={{
-          backgroundImage: `url(${current.url})`,
-          backgroundPosition: current.pos,
+          objectFit: 'cover',
+          objectPosition: 'center bottom',
           opacity: fade ? 1 : 0,
         }}
       />
