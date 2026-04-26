@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
-import { Plus, Search, Edit, Trash2, Eye, Paperclip, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Paperclip, X, ChevronLeft, ChevronRight, Car } from 'lucide-react';
 import { formatCurrency, formatDate, JOB_STATUS } from '@/lib/utils';
 
 const EMPTY_FORM = { vehicleId: '', date: new Date().toISOString().slice(0, 10), description: '', mileageIn: '', mileageOut: '', laborCost: '0', status: 'PENDING', notes: '', items: [] };
@@ -28,8 +28,11 @@ export default function Jobs() {
   const [dialog, setDialog] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [vehicles, setVehicles] = useState([]);
-  const [vehicleSearch, setVehicleSearch] = useState('');
+  // Buscador de vehículo en el dialog
+  const [vehicleQuery, setVehicleQuery]     = useState('');
+  const [vehicleResults, setVehicleResults] = useState([]);
+  const [vehicleLoading, setVehicleLoading] = useState(false);
+  const [vehicleSelected, setVehicleSelected] = useState(null); // { id, label }
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
@@ -46,11 +49,27 @@ export default function Jobs() {
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
+  // Búsqueda debounced de vehículos (solo cuando hay 2+ caracteres)
   useEffect(() => {
-    vehiclesApi.list({ limit: 200, search: vehicleSearch }).then(r => setVehicles(r.data.data));
-  }, [vehicleSearch]);
+    if (!vehicleQuery || vehicleQuery.length < 2) { setVehicleResults([]); return; }
+    const t = setTimeout(async () => {
+      setVehicleLoading(true);
+      try {
+        const { data } = await vehiclesApi.list({ search: vehicleQuery, limit: 10 });
+        setVehicleResults(data.data || []);
+      } finally { setVehicleLoading(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [vehicleQuery]);
 
-  function openCreate() { setForm(EMPTY_FORM); setSelected(null); setDialog('create'); }
+  function clearVehicleSearch() { setVehicleQuery(''); setVehicleResults([]); setVehicleSelected(null); }
+
+  function openCreate() {
+    setForm(EMPTY_FORM);
+    setSelected(null);
+    clearVehicleSearch();
+    setDialog('create');
+  }
 
   async function openEdit(j) {
     const { data } = await jobsApi.get(j.id);
@@ -71,10 +90,18 @@ export default function Jobs() {
       })),
     });
     setSelected(data);
+    clearVehicleSearch();
+    if (data.vehicle) {
+      const v = data.vehicle;
+      setVehicleSelected({
+        id: v.id,
+        label: `${v.client?.lastName ?? ''}, ${v.client?.firstName ?? ''} — ${v.brand} ${v.model}${v.plate ? ` (${v.plate})` : ''}`.trim(),
+      });
+    }
     setDialog('edit');
   }
 
-  function closeDialog() { setDialog(null); setSelected(null); }
+  function closeDialog() { setDialog(null); setSelected(null); clearVehicleSearch(); }
   function setField(name, value) { setForm(f => ({ ...f, [name]: value })); }
 
   function addItem() { setForm(f => ({ ...f, items: [...f.items, { ...EMPTY_ITEM }] })); }
@@ -244,14 +271,62 @@ export default function Jobs() {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="text-sm font-medium">Vehículo *</label>
-                <Select className="mt-1" value={form.vehicleId} onChange={e => setField('vehicleId', e.target.value)}>
-                  <option value="">Seleccionar vehículo...</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id}>
-                      {v.client?.lastName}, {v.client?.firstName} — {v.brand} {v.model}{v.plate ? ` (${v.plate})` : ''}
-                    </option>
-                  ))}
-                </Select>
+                {vehicleSelected ? (
+                  /* Vehículo ya seleccionado → mostrar chip con opción de limpiar */
+                  <div className="mt-1 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Car className="h-4 w-4 text-blue-500 shrink-0" />
+                    <span className="text-sm font-medium text-blue-800 flex-1 truncate">{vehicleSelected.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => { clearVehicleSearch(); setField('vehicleId', ''); }}
+                      className="text-blue-400 hover:text-blue-700 shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  /* Buscador */
+                  <div className="relative mt-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    {vehicleLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    )}
+                    <Input
+                      className="pl-9"
+                      placeholder="Buscar por patente, nombre o marca..."
+                      value={vehicleQuery}
+                      onChange={e => setVehicleQuery(e.target.value)}
+                      autoFocus
+                    />
+                    {vehicleResults.length > 0 && (
+                      <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                        {vehicleResults.map(v => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 text-left border-b last:border-0"
+                            onClick={() => {
+                              const label = `${v.client?.lastName ?? ''}, ${v.client?.firstName ?? ''} — ${v.brand} ${v.model}${v.plate ? ` (${v.plate})` : ''}`.trim();
+                              setVehicleSelected({ id: v.id, label });
+                              setField('vehicleId', String(v.id));
+                              setVehicleQuery('');
+                              setVehicleResults([]);
+                            }}
+                          >
+                            <Car className="h-4 w-4 text-slate-400 shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium">{v.brand} {v.model}{v.plate ? ` — ${v.plate}` : ''}</p>
+                              <p className="text-xs text-slate-400">{v.client?.lastName}, {v.client?.firstName}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {vehicleQuery.length >= 2 && !vehicleLoading && vehicleResults.length === 0 && (
+                      <p className="text-xs text-slate-400 mt-1">Sin resultados para "{vehicleQuery}"</p>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium">Fecha</label>
