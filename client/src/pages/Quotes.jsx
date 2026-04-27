@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { quotesApi, clientsApi, vehiclesApi, catalogApi, settingsApi } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -337,6 +337,7 @@ export default function Quotes() {
   const [printing, setPrinting] = useState(null);
   const [workshopData, setWorkshopData] = useState({});
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ── Estado para búsqueda de cliente / vehículo en el formulario ──
   const [selectedClient, setSelectedClient] = useState(null);     // { id, label }
@@ -350,6 +351,15 @@ export default function Quotes() {
   useEffect(() => {
     settingsApi.get().then(r => setWorkshopData(r.data)).catch(() => {});
   }, []);
+
+  // Si venimos de "Pasar a presupuesto" desde un trabajo, abrir ese presupuesto directo
+  useEffect(() => {
+    const quoteId = location.state?.openQuoteId;
+    if (!quoteId) return;
+    // Limpiar el state para que no se vuelva a abrir al navegar
+    navigate(location.pathname, { replace: true, state: {} });
+    openEdit({ id: quoteId });
+  }, [location.state?.openQuoteId]);
 
   const fetchQuotes = useCallback(async () => {
     setLoading(true);

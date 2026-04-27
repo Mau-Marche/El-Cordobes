@@ -9,7 +9,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { toast } from '@/components/ui/toast';
 import {
   ArrowLeft, Edit, Upload, Trash2, FileText,
-  Car, User, Paperclip, Image, File, Download, Printer
+  Car, User, Paperclip, Image, File, Download, Printer, FileCheck
 } from 'lucide-react';
 import { formatDate, formatCurrency, JOB_STATUS, clientFullName } from '@/lib/utils';
 import { buildPrintHTML } from '@/lib/printQuote';
@@ -22,6 +22,7 @@ export default function JobDetail() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -75,6 +76,17 @@ export default function JobDetail() {
     }
   }
 
+  async function handleToQuote() {
+    setConverting(true);
+    try {
+      const { data: quote } = await jobsApi.toQuote(job.id);
+      toast({ title: 'Presupuesto creado', variant: 'success' });
+      navigate('/quotes', { state: { openQuoteId: quote.id } });
+    } catch (err) {
+      toast({ title: err.response?.data?.error || 'Error al crear presupuesto', variant: 'error' });
+    } finally { setConverting(false); }
+  }
+
   async function handlePrintComprobante() {
     setPrinting(true);
     try {
@@ -113,6 +125,9 @@ export default function JobDetail() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/jobs')}><ArrowLeft className="h-4 w-4" />Volver</Button>
+            <Button variant="outline" onClick={handleToQuote} loading={converting}>
+              <FileCheck className="h-4 w-4" />Pasar a presupuesto
+            </Button>
             <Button variant="outline" onClick={handlePrintComprobante} loading={printing}>
               <Printer className="h-4 w-4" />Imprimir comprobante
             </Button>

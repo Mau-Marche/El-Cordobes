@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { jobsApi, vehiclesApi } from '@/lib/api';
+import { jobsApi, vehiclesApi, settingsApi } from '@/lib/api';
 import { DescriptionSearch } from '@/components/ui/DescriptionSearch';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
-import { Plus, Search, Edit, Trash2, Eye, Paperclip, X, ChevronLeft, ChevronRight, Car } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Printer, FileText, X, ChevronLeft, ChevronRight, Car } from 'lucide-react';
 import { formatCurrency, formatDate, JOB_STATUS } from '@/lib/utils';
+import { buildPrintHTML } from '@/lib/printQuote';
 
 const EMPTY_FORM = { vehicleId: '', date: new Date().toISOString().slice(0, 10), description: '', mileageIn: '', mileageOut: '', laborCost: '0', status: 'PENDING', notes: '', items: [] };
 const EMPTY_ITEM = { description: '', quantity: '1', unitPrice: '', subtotal: '0' };
@@ -35,6 +36,8 @@ export default function Jobs() {
   const [vehicleLoading, setVehicleLoading] = useState(false);
   const [vehicleSelected, setVehicleSelected] = useState(null); // { id, label }
   const [saving, setSaving] = useState(false);
+  const [printingId, setPrintingId] = useState(null);
+  const [convertingId, setConvertingId] = useState(null);
   const navigate = useNavigate();
 
   const fetchJobs = useCallback(async () => {
@@ -144,6 +147,34 @@ export default function Jobs() {
     } finally { setSaving(false); }
   }
 
+  async function handleToQuote(jobId) {
+    setConvertingId(jobId);
+    try {
+      const { data: quote } = await jobsApi.toQuote(jobId);
+      toast({ title: 'Presupuesto creado', variant: 'success' });
+      navigate('/quotes', { state: { openQuoteId: quote.id } });
+    } catch (err) {
+      toast({ title: err.response?.data?.error || 'Error al crear presupuesto', variant: 'error' });
+    } finally { setConvertingId(null); }
+  }
+
+  async function handlePrint(jobId) {
+    setPrintingId(jobId);
+    try {
+      const [{ data: quote }, { data: workshop }] = await Promise.all([
+        jobsApi.toQuote(jobId),
+        settingsApi.get(),
+      ]);
+      const html = buildPrintHTML(quote, workshop, { docTitle: 'Comprobante', mileageIn: quote._jobMileageIn });
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) { toast({ title: 'El navegador bloqueó la ventana. Permitila para imprimir.', variant: 'error' }); return; }
+      win.document.write(html);
+      win.document.close();
+    } catch (err) {
+      toast({ title: err.response?.data?.error || 'Error al generar comprobante', variant: 'error' });
+    } finally { setPrintingId(null); }
+  }
+
   async function handleDelete(j) {
     if (!confirm('¿Eliminar este trabajo?')) return;
     try {
@@ -232,13 +263,25 @@ export default function Jobs() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => navigate(`/jobs/${j.id}`)}>
+                          <Button size="icon" variant="ghost" onClick={() => navigate(`/jobs/${j.id}`)} title="Ver ficha">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => openEdit(j)}>
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(j)} title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => handleDelete(j)} className="text-destructive hover:text-destructive">
+                          <Button size="icon" variant="ghost" onClick={() => handleToQuote(j.id)} title="Pasar a presupuesto"
+                            disabled={convertingId === j.id} className="text-blue-600 hover:text-blue-700">
+                            {convertingId === j.id
+                              ? <div className="h-4 w-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                              : <FileText className="h-4 w-4" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => handlePrint(j.id)} title="Imprimir comprobante directo"
+                            disabled={printingId === j.id} className="text-orange-600 hover:text-orange-700">
+                            {printingId === j.id
+                              ? <div className="h-4 w-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                              : <Printer className="h-4 w-4" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => handleDelete(j)} className="text-destructive hover:text-destructive" title="Eliminar">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

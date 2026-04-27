@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { vehiclesApi, jobsApi } from '@/lib/api';
+import { vehiclesApi, jobsApi, settingsApi } from '@/lib/api';
 import { DescriptionSearch } from '@/components/ui/DescriptionSearch';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,10 @@ import { Select } from '@/components/ui/select';
 import { toast } from '@/components/ui/toast';
 import {
   ArrowLeft, Edit, Plus, Wrench, FileText,
-  Car, User, Hash, Gauge, Palette
+  Car, User, Hash, Gauge, Palette, Printer
 } from 'lucide-react';
 import { formatDate, formatCurrency, JOB_STATUS, QUOTE_STATUS, clientFullName } from '@/lib/utils';
+import { buildPrintHTML } from '@/lib/printQuote';
 
 export default function VehicleDetail() {
   const { id } = useParams();
@@ -32,6 +33,7 @@ export default function VehicleDetail() {
     items: [],
   });
   const [saving, setSaving] = useState(false);
+  const [printingId, setPrintingId] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -58,6 +60,23 @@ export default function VehicleDetail() {
       items: [],
     }));
     setNewJobDialog(true);
+  }
+
+  async function handlePrint(jobId) {
+    setPrintingId(jobId);
+    try {
+      const [{ data: quote }, { data: workshop }] = await Promise.all([
+        jobsApi.toQuote(jobId),
+        settingsApi.get(),
+      ]);
+      const html = buildPrintHTML(quote, workshop, { docTitle: 'Comprobante', mileageIn: quote._jobMileageIn });
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) { toast({ title: 'El navegador bloqueó la ventana. Permitila para imprimir.', variant: 'error' }); return; }
+      win.document.write(html);
+      win.document.close();
+    } catch (err) {
+      toast({ title: err.response?.data?.error || 'Error al generar comprobante', variant: 'error' });
+    } finally { setPrintingId(null); }
   }
 
   async function saveJob() {
@@ -173,27 +192,35 @@ export default function VehicleDetail() {
             ) : (
               <div className="space-y-2">
                 {vehicle.jobs.map(job => (
-                  <Link
-                    key={job.id}
-                    to={`/jobs/${job.id}`}
-                    className="flex items-start gap-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{job.description}</p>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
-                        <span>{formatDate(job.date)}</span>
-                        {job.mileageIn && <span>Km entrada: {job.mileageIn.toLocaleString('es-AR')}</span>}
-                        {job.mileageOut && <span>Km salida: {job.mileageOut.toLocaleString('es-AR')}</span>}
-                        {job.items?.length > 0 && <span>{job.items.length} repuesto{job.items.length !== 1 ? 's' : ''}</span>}
+                  <div key={job.id} className="flex items-start gap-2 p-4 rounded-lg border hover:bg-gray-50 transition-colors group">
+                    <Link to={`/jobs/${job.id}`} className="flex flex-1 items-start gap-4 min-w-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{job.description}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
+                          <span>{formatDate(job.date)}</span>
+                          {job.mileageIn && <span>Km entrada: {job.mileageIn.toLocaleString('es-AR')}</span>}
+                          {job.mileageOut && <span>Km salida: {job.mileageOut.toLocaleString('es-AR')}</span>}
+                          {job.items?.length > 0 && <span>{job.items.length} repuesto{job.items.length !== 1 ? 's' : ''}</span>}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-semibold">{formatCurrency(job.totalCost)}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${JOB_STATUS[job.status]?.color}`}>
-                        {JOB_STATUS[job.status]?.label}
-                      </span>
-                    </div>
-                  </Link>
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold">{formatCurrency(job.totalCost)}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${JOB_STATUS[job.status]?.color}`}>
+                          {JOB_STATUS[job.status]?.label}
+                        </span>
+                      </div>
+                    </Link>
+                    <button
+                      onClick={() => handlePrint(job.id)}
+                      disabled={printingId === job.id}
+                      title="Imprimir comprobante"
+                      className="shrink-0 p-1.5 rounded text-muted-foreground hover:text-orange-600 hover:bg-orange-50 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      {printingId === job.id
+                        ? <div className="h-4 w-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                        : <Printer className="h-4 w-4" />}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
