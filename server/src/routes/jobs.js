@@ -191,10 +191,26 @@ router.post('/:id/to-quote', async (req, res) => {
     const next = last ? parseInt(last.number.replace(/\D/g, '')) + 1 : 1;
     const number = `COMP-${String(next).padStart(5, '0')}`;
 
-    // Armar notas: combinar descripción del trabajo + notas internas
-    const notesLines = [];
-    if (job.description) notesLines.push(job.description);
-    if (job.notes) notesLines.push(job.notes);
+    // Convertir líneas de descripción del trabajo en ítems del presupuesto
+    // Formato típico: "- Cambio de aceite\n- Filtro de aire"
+    const descItems = job.description
+      ? job.description
+          .split('\n')
+          .map(l => l.replace(/^[-•]\s*/, '').trim())
+          .filter(l => l.length > 0)
+          .map(l => ({ description: l, quantity: 1, unitPrice: 0, subtotal: 0 }))
+      : [];
+
+    // Ítems del trabajo con precios + líneas de descripción sin precio
+    const allItems = [
+      ...job.items.map(i => ({
+        description: i.description,
+        quantity:    i.quantity,
+        unitPrice:   i.unitPrice,
+        subtotal:    i.subtotal,
+      })),
+      ...descItems,
+    ];
 
     const quote = await prisma.quote.create({
       data: {
@@ -202,18 +218,11 @@ router.post('/:id/to-quote', async (req, res) => {
         clientId: job.vehicle.clientId,
         vehicleId: job.vehicleId,
         date: job.date,
-        notes: notesLines.length ? notesLines.join('\n') : null,
+        notes: job.notes || null,   // solo las notas internas
         laborCost: job.laborCost,
         total: job.totalCost,
         status: 'APPROVED',
-        items: {
-          create: job.items.map(i => ({
-            description: i.description,
-            quantity:    i.quantity,
-            unitPrice:   i.unitPrice,
-            subtotal:    i.subtotal,
-          })),
-        },
+        items: { create: allItems },
       },
       include: {
         items: true,
