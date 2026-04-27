@@ -9,15 +9,17 @@ import { formatCurrency, formatDate, JOB_STATUS, QUOTE_STATUS, clientFullName, v
 import { Users, Wrench, FileText, TrendingUp, Search, Car, Calendar } from 'lucide-react';
 
 /* ── Imágenes de autos de lujo — Unsplash ───────────────────────── */
-/* Se pide w=1400 sin recorte forzado; el <img> usa object-cover + bottom  */
-// Fotos elegidas específicamente como tomas laterales/frontales amplias
-// Sin h= ni fit=crop para no pre-recortar; CSS object-cover maneja el crop final
 const CAR_IMAGES = [
-  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1800&q=85', label: 'Porsche 911',    pos: 'center 38%' },
-  { url: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=1800&q=85', label: 'Coupé oscuro',  pos: 'center 42%' },
-  { url: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?w=1800&q=85', label: 'Sport',         pos: 'center 50%' },
-  { url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1800&q=85', label: 'Supercar',      pos: 'center 45%' },
-  { url: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1800&q=85', label: 'Aston Martin',  pos: 'center 40%' },
+  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1800&q=90', label: 'Porsche 911',       pos: '60% 55%'    },
+  { url: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1800&q=90',   label: 'Lamborghini',        pos: 'center 60%' },
+  { url: 'https://images.unsplash.com/photo-1592853625511-ad0edcc69c07?w=1800&q=90',label: 'Ferrari',            pos: 'center 55%' },
+  { url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1800&q=90',   label: 'McLaren 570S',       pos: 'center 50%' },
+  { url: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1800&q=90',   label: 'BMW M',              pos: 'center 58%' },
+  { url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1800&q=90',label: 'Mercedes-AMG',       pos: 'center 52%' },
+  { url: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1800&q=90',label: 'Aston Martin',       pos: 'center 45%' },
+  { url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=1800&q=90',label: 'Bentley Continental', pos: 'center 55%' },
+  { url: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=1800&q=90',label: 'Supercar',           pos: 'center 52%' },
+  { url: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?w=1800&q=90',label: 'Sport Coupé',        pos: 'center 48%' },
 ];
 
 /* ── Stat card ─────────────────────────────────────────────────── */
@@ -70,7 +72,7 @@ function HeroBanner({ workshopName = 'El Cordobés' }) {
   });
 
   return (
-    <div className="relative h-72 rounded-2xl overflow-hidden shadow-lg mb-6"
+    <div className="relative h-[340px] rounded-2xl overflow-hidden shadow-lg mb-6"
       style={{ backgroundColor: '#0a1628' }}
     >
       {/* ── Imagen: object-cover + bottom garantiza que el auto (abajo) no se corta ── */}
@@ -81,9 +83,10 @@ function HeroBanner({ workshopName = 'El Cordobés' }) {
         className="absolute inset-0 w-full h-full transition-opacity duration-500"
         style={{
           objectFit: 'cover',
-          objectPosition: current.pos || 'center 40%',
+          objectPosition: current.pos || 'center 55%',
           opacity: fade ? 1 : 0,
         }}
+        onError={() => setImgIdx(i => (i + 1) % CAR_IMAGES.length)}
       />
 
       {/* ── Overlay: más oscuro a la izquierda, transparente a la derecha ── */}
