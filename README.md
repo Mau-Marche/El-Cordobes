@@ -8,7 +8,8 @@ Sistema web local para gestión de clientes, vehículos, trabajos y presupuestos
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | Web server NGINX | nginx (proxy reverso + archivos estáticos)
+| Frontend | React 18 + Vite 5 + Tailwind CSS 3 + Zustand |
+| Web server | nginx (HTTPS :443 · proxy reverso · archivos estáticos) |
 | Backend | Node.js + Express 4 + Prisma ORM 5 + JWT + Winston |
 | Base de datos | PostgreSQL 18 |
 | Servicios Windows | NSSM (Non-Sucking Service Manager) |
@@ -19,13 +20,20 @@ Sistema web local para gestión de clientes, vehículos, trabajos y presupuestos
 ## Arquitectura
 
 ```
-Browser  →  nginx :80
-               ├── /api/*      →  Node.js :3000  (Express API)
-               ├── /uploads/*  →  Node.js :3000  (archivos adjuntos)
-               └── /*          →  server/public/ (React compilado)
+Browser
+  │
+  ├── HTTP :80  →  nginx  →  301 redirect a HTTPS
+  │
+  └── HTTPS :443  →  nginx
+                       ├── /api/*      →  Node.js :3000  (Express API)
+                       ├── /uploads/*  →  Node.js :3000  (archivos adjuntos)
+                       └── /*          →  server/public/ (React compilado)
 ```
 
-nginx actúa como punto de entrada único en el puerto 80. No es necesario exponer el puerto 3000 ni el 5173.
+**React** es el framework frontend — Vite lo compila a archivos estáticos (`index.html`, `.js`, `.css`) en `server/public/`.
+**nginx** sirve esos archivos y actúa como proxy reverso hacia el backend. No es necesario exponer el puerto 3000.
+
+El certificado SSL autofirmado está en `C:\nginx\ssl\` (válido 5 años, DNS `taller.local`).
 
 ---
 
@@ -149,9 +157,11 @@ O desde `ADMINISTRAR.bat` → opción **9**.
 
 | URL | Descripción |
 |-----|-------------|
-| `http://localhost` | Esta PC |
-| `http://192.168.0.17` | Red local (verificar IP con `ipconfig`) |
-| `http://taller.local` | Si se configuró DNS con `scripts\configurar-dns.bat` |
+| `https://localhost` | Esta PC |
+| `https://192.168.0.17` | Red local (verificar IP con `ipconfig`) |
+| `https://taller.local` | Si se configuró DNS con `scripts\configurar-dns.bat` |
+
+> El certificado es autofirmado: el navegador mostrará una advertencia la primera vez. Clic en *Avanzado → Continuar*. Para eliminarla definitivamente, instalar `C:\nginx\ssl\taller.local.crt` en el almacén de certificados raíz de Windows.
 
 Credenciales por defecto: `admin` / `admin123` (cambiar desde Configuración)
 
@@ -196,6 +206,7 @@ el-cordobes/
 │       ├── lib/
 │       │   ├── api.js             # Axios + interceptor JWT + todos los endpoints
 │       │   ├── utils.js           # formatCurrency, formatDate, JOB_STATUS, QUOTE_STATUS
+│       │   ├── printQuote.js      # buildPrintHTML — genera HTML de comprobante/presupuesto
 │       │   └── car-brands.js      # Marcas y modelos para autocompletar
 │       └── store/
 │           └── authStore.js       # Zustand — estado de autenticación
@@ -207,7 +218,7 @@ el-cordobes/
 │   │   │   ├── users.js           # CRUD usuarios
 │   │   │   ├── clients.js         # CRUD clientes
 │   │   │   ├── vehicles.js        # CRUD vehículos
-│   │   │   ├── jobs.js            # CRUD trabajos + adjuntos
+│   │   │   ├── jobs.js            # CRUD trabajos + adjuntos + conversión a presupuesto
 │   │   │   ├── quotes.js          # CRUD presupuestos + conversión a trabajo
 │   │   │   ├── dashboard.js       # Estadísticas + búsqueda global
 │   │   │   ├── settings.js        # Datos del taller (lee/escribe settings.json)
@@ -224,6 +235,7 @@ el-cordobes/
 │   │   └── schema.prisma          # Modelos: User, Client, Vehicle, Job, Quote, etc.
 │   ├── data/
 │   │   ├── settings.json          # Nombre, dirección, teléfono, CUIT del taller
+│   │   ├── catalog.json           # Catálogo de descripciones de trabajos (persistido)
 │   │   └── car-brands.json        # Marcas y modelos para autocompletar
 │   └── public/                    # Frontend compilado (salida de npm run build)
 ├── scripts/
