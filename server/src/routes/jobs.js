@@ -30,6 +30,20 @@ const upload = multer({
   },
 });
 
+// Actualiza vehicle.mileage al km más alto registrado en sus trabajos
+async function syncVehicleMileage(vehicleId) {
+  try {
+    const agg = await prisma.job.aggregate({
+      where: { vehicleId },
+      _max: { mileageIn: true, mileageOut: true },
+    });
+    const maxKm = Math.max(agg._max.mileageIn || 0, agg._max.mileageOut || 0);
+    if (maxKm > 0) {
+      await prisma.vehicle.update({ where: { id: vehicleId }, data: { mileage: maxKm } });
+    }
+  } catch { /* no bloquear la respuesta si falla */ }
+}
+
 // GET /api/jobs?vehicleId=&status=&page=1&limit=20
 router.get('/', async (req, res) => {
   const { vehicleId, status, page = 1, limit = 20, search = '' } = req.query;
@@ -90,9 +104,10 @@ router.post('/', async (req, res) => {
   const totalItems = parsedItems.reduce((acc, i) => acc + parseFloat(i.subtotal || 0), 0);
   const total = totalItems + parseFloat(laborCost || 0);
 
+  const vid = parseInt(vehicleId);
   const job = await prisma.job.create({
     data: {
-      vehicleId: parseInt(vehicleId),
+      vehicleId: vid,
       quoteId: quoteId ? parseInt(quoteId) : null,
       date: date ? new Date(date) : new Date(),
       description,
@@ -113,6 +128,10 @@ router.post('/', async (req, res) => {
     },
     include: { items: true, vehicle: { include: { client: true } } },
   });
+
+  // Mantener vehicle.mileage actualizado al mayor km registrado
+  await syncVehicleMileage(vid);
+
   res.status(201).json(job);
 });
 
@@ -148,6 +167,10 @@ router.put('/:id', async (req, res) => {
     },
     include: { items: true, vehicle: { include: { client: true } }, attachments: true },
   });
+
+  // Mantener vehicle.mileage actualizado al mayor km registrado
+  await syncVehicleMileage(job.vehicleId);
+
   res.json(job);
 });
 

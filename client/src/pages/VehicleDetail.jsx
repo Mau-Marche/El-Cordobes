@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/select';
 import { toast } from '@/components/ui/toast';
 import {
   ArrowLeft, Edit, Plus, Wrench, FileText,
-  Car, User, Hash, Gauge, Palette, Printer
+  Car, User, Hash, Gauge, Palette, Printer, TrendingUp
 } from 'lucide-react';
 import { formatDate, formatCurrency, JOB_STATUS, QUOTE_STATUS, clientFullName } from '@/lib/utils';
 import { buildPrintHTML } from '@/lib/printQuote';
@@ -170,6 +170,9 @@ export default function VehicleDetail() {
           </Card>
         </div>
 
+        {/* Historial de kilometraje */}
+        <KmHistory jobs={vehicle.jobs} />
+
         {/* Historial de trabajos */}
         <Card>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -303,6 +306,111 @@ export default function VehicleDetail() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function KmHistory({ jobs }) {
+  // Solo trabajos con al menos mileageIn, ordenados cronológicamente
+  const entries = [...jobs]
+    .filter(j => j.mileageIn || j.mileageOut)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (entries.length === 0) return null;
+
+  const firstKm  = entries[0].mileageIn ?? entries[0].mileageOut;
+  const lastEntry = entries[entries.length - 1];
+  const lastKm   = lastEntry.mileageOut ?? lastEntry.mileageIn;
+  const totalIncrease = lastKm - firstKm;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <TrendingUp className="h-4 w-4" /> Historial de kilometraje
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0 space-y-4">
+        {/* Resumen */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 bg-slate-50 rounded-lg">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Primer registro</p>
+            <p className="text-lg font-bold">{firstKm.toLocaleString('es-AR')}</p>
+            <p className="text-xs text-muted-foreground">km</p>
+          </div>
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-600 uppercase tracking-wide mb-1">Último registro</p>
+            <p className="text-lg font-bold text-blue-700">{lastKm.toLocaleString('es-AR')}</p>
+            <p className="text-xs text-blue-500">km</p>
+          </div>
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <p className="text-xs text-green-600 uppercase tracking-wide mb-1">Recorrido total</p>
+            <p className="text-lg font-bold text-green-700">+{totalIncrease.toLocaleString('es-AR')}</p>
+            <p className="text-xs text-green-500">km</p>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="relative">
+          {/* Línea vertical */}
+          <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border" />
+          <div className="space-y-3">
+            {entries.map((job, idx) => {
+              // Diferencia con el registro anterior
+              const prev = idx > 0 ? entries[idx - 1] : null;
+              const prevKm = prev ? (prev.mileageOut ?? prev.mileageIn) : null;
+              const currKm = job.mileageIn ?? job.mileageOut;
+              const diff = prevKm != null ? currKm - prevKm : null;
+
+              return (
+                <div key={job.id} className="flex gap-3 pl-1">
+                  {/* Punto */}
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 mt-0.5 z-10 ${
+                    idx === entries.length - 1
+                      ? 'border-blue-500 bg-blue-500'
+                      : 'border-slate-400 bg-white'
+                  }`} />
+
+                  <div className="flex-1 min-w-0 pb-1">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="min-w-0">
+                        <Link
+                          to={`/jobs/${job.id}`}
+                          className="text-sm font-medium hover:text-primary hover:underline truncate block"
+                        >
+                          {job.description}
+                        </Link>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatDate(job.date)}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="flex items-center gap-2 text-sm">
+                          {job.mileageIn && (
+                            <span className="text-muted-foreground">
+                              Entrada: <strong>{job.mileageIn.toLocaleString('es-AR')} km</strong>
+                            </span>
+                          )}
+                          {job.mileageOut && (
+                            <span className="text-muted-foreground">
+                              → Salida: <strong>{job.mileageOut.toLocaleString('es-AR')} km</strong>
+                            </span>
+                          )}
+                        </div>
+                        {diff != null && diff > 0 && (
+                          <p className="text-xs text-green-600 font-medium text-right mt-0.5">
+                            +{diff.toLocaleString('es-AR')} km desde última visita
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
