@@ -18,7 +18,7 @@ export function WorkshopLogo({ size = 64, uid = '0' }) {
         alt="El Cordobés"
         width={size}
         height={size}
-        style={{ width: size, height: size, objectFit: 'contain' }}
+        style={{ width: size, height: size, objectFit: 'cover', borderRadius: '50%' }}
         onError={() => setFailed(true)}
       />
     );
