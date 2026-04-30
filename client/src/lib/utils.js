@@ -38,7 +38,10 @@ export const QUOTE_STATUS = {
 
 export function clientFullName(client) {
   if (!client) return '—';
-  return `${client.lastName}, ${client.firstName}`;
+  const last  = (client.lastName  || '').trim();
+  const first = (client.firstName || '').trim();
+  if (last && first) return `${last}, ${first}`;
+  return last || first || '—';
 }
 
 export function vehicleLabel(v) {
