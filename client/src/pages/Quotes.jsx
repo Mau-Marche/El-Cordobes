@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from '@/components/ui/toast';
 import { Plus, Search, Edit, Trash2, Printer, ArrowRight, ChevronLeft, ChevronRight, X, Loader2, BookOpen, User, Car } from 'lucide-react';
 import { formatCurrency, formatDate, QUOTE_STATUS } from '@/lib/utils';
-import { buildPrintHTML } from '@/lib/printQuote';
+import { buildPrintHTML, loadLogoDataUrl } from '@/lib/printQuote';
 
 const EMPTY_FORM = { clientId: '', vehicleId: '', validUntil: '', notes: '', laborCost: '0', status: 'DRAFT', items: [] };
 const EMPTY_ITEM = { description: '', quantity: '1', unitPrice: '0', subtotal: '0' };
@@ -556,7 +556,8 @@ export default function Quotes() {
     setPrinting(q.id);
     try {
       const { data } = await quotesApi.get(q.id);
-      const html = buildPrintHTML(data, workshopData);
+      const logoDataUrl = await loadLogoDataUrl();
+      const html = buildPrintHTML(data, workshopData, { logoDataUrl });
       const win = window.open('', '_blank', 'width=900,height=700');
       if (!win) {
         toast({ title: 'El navegador bloqueó la ventana emergente. Permitila para imprimir.', variant: 'error' });

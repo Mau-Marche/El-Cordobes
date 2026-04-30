@@ -15,7 +15,7 @@ import {
   Car, User, Hash, Gauge, Palette, Printer, TrendingUp
 } from 'lucide-react';
 import { formatDate, formatCurrency, JOB_STATUS, QUOTE_STATUS, clientFullName } from '@/lib/utils';
-import { buildPrintHTML } from '@/lib/printQuote';
+import { buildPrintHTML, loadLogoDataUrl } from '@/lib/printQuote';
 
 export default function VehicleDetail() {
   const { id } = useParams();
@@ -69,7 +69,8 @@ export default function VehicleDetail() {
         jobsApi.toQuote(jobId),
         settingsApi.get(),
       ]);
-      const html = buildPrintHTML(quote, workshop, { docTitle: 'Comprobante', mileageIn: quote._jobMileageIn });
+      const logoDataUrl = await loadLogoDataUrl();
+      const html = buildPrintHTML(quote, workshop, { docTitle: 'Comprobante', mileageIn: quote._jobMileageIn, logoDataUrl });
       const win = window.open('', '_blank', 'width=900,height=700');
       if (!win) { toast({ title: 'El navegador bloqueó la ventana. Permitila para imprimir.', variant: 'error' }); return; }
       win.document.write(html);

@@ -12,7 +12,7 @@ import {
   Car, User, Paperclip, Image, File, Download, Printer, FileCheck
 } from 'lucide-react';
 import { formatDate, formatCurrency, JOB_STATUS, clientFullName } from '@/lib/utils';
-import { buildPrintHTML } from '@/lib/printQuote';
+import { buildPrintHTML, loadLogoDataUrl } from '@/lib/printQuote';
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -94,9 +94,11 @@ export default function JobDetail() {
         jobsApi.toQuote(job.id),
         settingsApi.get(),
       ]);
+      const logoDataUrl = await loadLogoDataUrl();
       const html = buildPrintHTML(quote, workshop, {
         docTitle: 'Comprobante',
         mileageIn: quote._jobMileageIn,
+        logoDataUrl,
       });
       const win = window.open('', '_blank', 'width=900,height=700');
       if (!win) {

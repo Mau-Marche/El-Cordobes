@@ -1,11 +1,31 @@
 /**
+ * loadLogoDataUrl — carga /logoelcordobes.png y lo convierte a base64.
+ * Cachea el resultado para no re-fetchear en impresiones sucesivas.
+ */
+let _cachedLogo = null;
+export async function loadLogoDataUrl() {
+  if (_cachedLogo) return _cachedLogo;
+  try {
+    const res  = await fetch('/logoelcordobes.png');
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload  = () => { _cachedLogo = reader.result; resolve(_cachedLogo); };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return null; }
+}
+
+/**
  * buildPrintHTML — genera el HTML listo para imprimir de un presupuesto/comprobante.
  *
  * @param {object} quote       — datos del presupuesto (incluye client, vehicle, items)
  * @param {object} workshop    — datos del taller (de settingsApi)
  * @param {object} options     — opciones extra:
- *   - docTitle   {string}  título del documento (default: 'Presupuesto')
- *   - mileageIn  {number}  km de entrada del trabajo (reemplaza vehicle.mileage en el print)
+ *   - docTitle      {string}  título del documento (default: 'Presupuesto')
+ *   - mileageIn     {number}  km de entrada del trabajo
+ *   - logoDataUrl   {string}  base64 del logo (de loadLogoDataUrl())
  */
 export function buildPrintHTML(quote, workshop = {}, options = {}) {
   const workshopName = workshop.workshopName || 'El Cordobés';
@@ -85,21 +105,16 @@ export function buildPrintHTML(quote, workshop = {}, options = {}) {
 <body>
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px">
-      <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-        <defs>
-          <radialGradient id="pg" cx="38%" cy="30%" r="68%">
-            <stop offset="0%" stop-color="#fb923c"/>
-            <stop offset="60%" stop-color="#ea580c"/>
-            <stop offset="100%" stop-color="#9a3412"/>
-          </radialGradient>
-        </defs>
+      ${options.logoDataUrl
+        ? `<img src="${options.logoDataUrl}" width="56" height="56" style="border-radius:50%;object-fit:cover;flex-shrink:0" />`
+        : `<svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+        <defs><radialGradient id="pg" cx="38%" cy="30%" r="68%">
+          <stop offset="0%" stop-color="#fb923c"/><stop offset="60%" stop-color="#ea580c"/><stop offset="100%" stop-color="#9a3412"/>
+        </radialGradient></defs>
         <circle cx="32" cy="32" r="31" fill="url(#pg)"/>
-        <circle cx="32" cy="32" r="29.5" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-        <g transform="rotate(-45, 32, 32)">
-          <path d="M 12 20 Q 10 20 10 22 L 10 26 L 27 26 L 27 38 L 10 38 L 10 42 Q 10 44 12 44 L 30 44 L 30 37 L 52 37 Q 57 37 57 32 Q 57 27 52 27 L 30 27 L 30 20 L 12 20 Z"
-            fill="white"/>
-        </g>
-      </svg>
+        <g transform="rotate(-45,32,32)"><path d="M 12 20 Q 10 20 10 22 L 10 26 L 27 26 L 27 38 L 10 38 L 10 42 Q 10 44 12 44 L 30 44 L 30 37 L 52 37 Q 57 37 57 32 Q 57 27 52 27 L 30 27 L 30 20 L 12 20 Z" fill="white"/></g>
+      </svg>`
+      }
       <div>
         <div class="workshop-name">${workshopName}</div>
         <div class="workshop-sub">Taller Automotriz</div>

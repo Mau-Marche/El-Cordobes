@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from '@/components/ui/toast';
 import { Plus, Search, Edit, Trash2, Eye, Printer, FileText, X, ChevronLeft, ChevronRight, Car } from 'lucide-react';
 import { formatCurrency, formatDate, JOB_STATUS } from '@/lib/utils';
-import { buildPrintHTML } from '@/lib/printQuote';
+import { buildPrintHTML, loadLogoDataUrl } from '@/lib/printQuote';
 
 const EMPTY_FORM = { vehicleId: '', date: new Date().toISOString().slice(0, 10), description: '', mileageIn: '', mileageOut: '', laborCost: '0', status: 'PENDING', notes: '', items: [] };
 const EMPTY_ITEM = { description: '', quantity: '1', unitPrice: '', subtotal: '0' };
@@ -171,7 +171,8 @@ export default function Jobs() {
         jobsApi.toQuote(jobId),
         settingsApi.get(),
       ]);
-      const html = buildPrintHTML(quote, workshop, { docTitle: 'Comprobante', mileageIn: quote._jobMileageIn });
+      const logoDataUrl = await loadLogoDataUrl();
+      const html = buildPrintHTML(quote, workshop, { docTitle: 'Comprobante', mileageIn: quote._jobMileageIn, logoDataUrl });
       const win = window.open('', '_blank', 'width=900,height=700');
       if (!win) { toast({ title: 'El navegador bloqueó la ventana. Permitila para imprimir.', variant: 'error' }); return; }
       win.document.write(html);
