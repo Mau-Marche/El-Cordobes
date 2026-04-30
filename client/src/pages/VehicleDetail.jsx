@@ -171,7 +171,7 @@ export default function VehicleDetail() {
         </div>
 
         {/* Historial de kilometraje */}
-        <KmHistory jobs={vehicle.jobs} />
+        <KmHistory jobs={vehicle.jobs} vehicleInitialKm={vehicle.mileage} />
 
         {/* Historial de trabajos */}
         <Card>
@@ -309,18 +309,18 @@ export default function VehicleDetail() {
   );
 }
 
-function KmHistory({ jobs }) {
-  // Solo trabajos con al menos mileageIn, ordenados cronológicamente
+function KmHistory({ jobs, vehicleInitialKm }) {
+  // Trabajos con al menos mileageIn, ordenados cronológicamente (más viejo primero)
   const entries = [...jobs]
     .filter(j => j.mileageIn || j.mileageOut)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  if (entries.length === 0) return null;
+  if (entries.length === 0 && !vehicleInitialKm) return null;
 
-  const firstKm  = entries[0].mileageIn ?? entries[0].mileageOut;
+  const firstKm   = vehicleInitialKm || (entries[0]?.mileageIn ?? entries[0]?.mileageOut);
   const lastEntry = entries[entries.length - 1];
-  const lastKm   = lastEntry.mileageOut ?? lastEntry.mileageIn;
-  const totalIncrease = lastKm - firstKm;
+  const lastKm    = lastEntry ? (lastEntry.mileageOut ?? lastEntry.mileageIn) : firstKm;
+  const totalKm   = lastKm - firstKm;
 
   return (
     <Card>
@@ -330,85 +330,92 @@ function KmHistory({ jobs }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
+
         {/* Resumen */}
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center p-3 bg-slate-50 rounded-lg">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Primer registro</p>
-            <p className="text-lg font-bold">{firstKm.toLocaleString('es-AR')}</p>
-            <p className="text-xs text-muted-foreground">km</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Primer registro</p>
+            <p className="text-lg font-bold text-slate-800">{firstKm?.toLocaleString('es-AR') ?? '—'}</p>
+            <p className="text-xs text-slate-400">km</p>
           </div>
           <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-600 uppercase tracking-wide mb-1">Último registro</p>
-            <p className="text-lg font-bold text-blue-700">{lastKm.toLocaleString('es-AR')}</p>
-            <p className="text-xs text-blue-500">km</p>
+            <p className="text-xs text-blue-600 uppercase tracking-wide mb-1">Km actual</p>
+            <p className="text-lg font-bold text-blue-700">{lastKm?.toLocaleString('es-AR') ?? '—'}</p>
+            <p className="text-xs text-blue-400">km</p>
           </div>
           <div className="text-center p-3 bg-green-50 rounded-lg">
-            <p className="text-xs text-green-600 uppercase tracking-wide mb-1">Recorrido total</p>
-            <p className="text-lg font-bold text-green-700">+{totalIncrease.toLocaleString('es-AR')}</p>
-            <p className="text-xs text-green-500">km</p>
+            <p className="text-xs text-green-600 uppercase tracking-wide mb-1">Total recorrido</p>
+            <p className="text-lg font-bold text-green-700">{totalKm > 0 ? `+${totalKm.toLocaleString('es-AR')}` : '—'}</p>
+            <p className="text-xs text-green-400">km</p>
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Línea vertical */}
-          <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border" />
-          <div className="space-y-3">
+        {/* Timeline por visita */}
+        {entries.length > 0 && (
+          <div className="space-y-2">
             {entries.map((job, idx) => {
-              // Diferencia con el registro anterior
-              const prev = idx > 0 ? entries[idx - 1] : null;
-              const prevKm = prev ? (prev.mileageOut ?? prev.mileageIn) : null;
-              const currKm = job.mileageIn ?? job.mileageOut;
-              const diff = prevKm != null ? currKm - prevKm : null;
+              const prev      = idx > 0 ? entries[idx - 1] : null;
+              const prevExitKm = prev ? (prev.mileageOut ?? prev.mileageIn) : vehicleInitialKm;
+              const kmBetween  = prevExitKm != null && job.mileageIn != null
+                ? job.mileageIn - prevExitKm : null;
+              const kmInTaller = job.mileageIn != null && job.mileageOut != null
+                ? job.mileageOut - job.mileageIn : null;
+              const isLast     = idx === entries.length - 1;
 
               return (
-                <div key={job.id} className="flex gap-3 pl-1">
-                  {/* Punto */}
-                  <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 mt-0.5 z-10 ${
-                    idx === entries.length - 1
-                      ? 'border-blue-500 bg-blue-500'
-                      : 'border-slate-400 bg-white'
-                  }`} />
-
-                  <div className="flex-1 min-w-0 pb-1">
-                    <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div className="min-w-0">
-                        <Link
-                          to={`/jobs/${job.id}`}
-                          className="text-sm font-medium hover:text-primary hover:underline truncate block"
-                        >
-                          {job.description}
-                        </Link>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatDate(job.date)}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="flex items-center gap-2 text-sm">
-                          {job.mileageIn && (
-                            <span className="text-muted-foreground">
-                              Entrada: <strong>{job.mileageIn.toLocaleString('es-AR')} km</strong>
-                            </span>
-                          )}
-                          {job.mileageOut && (
-                            <span className="text-muted-foreground">
-                              → Salida: <strong>{job.mileageOut.toLocaleString('es-AR')} km</strong>
-                            </span>
-                          )}
-                        </div>
-                        {diff != null && diff > 0 && (
-                          <p className="text-xs text-green-600 font-medium text-right mt-0.5">
-                            +{diff.toLocaleString('es-AR')} km desde última visita
-                          </p>
-                        )}
-                      </div>
+                <div key={job.id} className={`rounded-lg border p-3 ${isLast ? 'border-blue-200 bg-blue-50/40' : 'border-slate-100 bg-white'}`}>
+                  {/* Encabezado visita */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <Link
+                        to={`/jobs/${job.id}`}
+                        className="text-sm font-semibold hover:text-primary hover:underline"
+                      >
+                        {job.description?.split('\n')[0] || 'Sin descripción'}
+                      </Link>
+                      <p className="text-xs text-slate-400">{formatDate(job.date)}</p>
                     </div>
+                    {isLast && (
+                      <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Última visita</span>
+                    )}
                   </div>
+
+                  {/* Km entrada → salida */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 bg-slate-100 rounded-md px-2 py-1">
+                      <span className="text-xs text-slate-500">Entrada</span>
+                      <span className="text-sm font-bold text-slate-800">
+                        {job.mileageIn != null ? `${job.mileageIn.toLocaleString('es-AR')} km` : <span className="text-slate-300 font-normal">—</span>}
+                      </span>
+                    </div>
+
+                    <span className="text-slate-300 text-lg">→</span>
+
+                    <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${job.mileageOut != null ? 'bg-green-100' : 'bg-yellow-50 border border-dashed border-yellow-300'}`}>
+                      <span className={`text-xs ${job.mileageOut != null ? 'text-green-600' : 'text-yellow-500'}`}>Salida</span>
+                      <span className={`text-sm font-bold ${job.mileageOut != null ? 'text-green-800' : 'text-yellow-400'}`}>
+                        {job.mileageOut != null ? `${job.mileageOut.toLocaleString('es-AR')} km` : 'Pendiente'}
+                      </span>
+                    </div>
+
+                    {kmInTaller != null && (
+                      <span className="text-xs text-green-600 font-medium">
+                        (+{kmInTaller.toLocaleString('es-AR')} km en taller)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Km entre visitas */}
+                  {kmBetween != null && kmBetween > 0 && (
+                    <p className="text-xs text-slate-400 mt-1.5">
+                      ↑ recorrió <strong className="text-slate-600">{kmBetween.toLocaleString('es-AR')} km</strong> desde la visita anterior
+                    </p>
+                  )}
                 </div>
               );
             })}
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

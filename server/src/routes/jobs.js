@@ -30,16 +30,22 @@ const upload = multer({
   },
 });
 
-// Actualiza vehicle.mileage al km más alto registrado en sus trabajos
+// Actualiza vehicle.mileage con el km del trabajo más reciente (por fecha).
+// Prioriza mileageOut sobre mileageIn dentro del mismo trabajo.
 async function syncVehicleMileage(vehicleId) {
   try {
-    const agg = await prisma.job.aggregate({
-      where: { vehicleId },
-      _max: { mileageIn: true, mileageOut: true },
+    const latest = await prisma.job.findFirst({
+      where: {
+        vehicleId,
+        OR: [{ mileageOut: { not: null } }, { mileageIn: { not: null } }],
+      },
+      orderBy: { date: 'desc' },
+      select: { mileageIn: true, mileageOut: true },
     });
-    const maxKm = Math.max(agg._max.mileageIn || 0, agg._max.mileageOut || 0);
-    if (maxKm > 0) {
-      await prisma.vehicle.update({ where: { id: vehicleId }, data: { mileage: maxKm } });
+    if (!latest) return;
+    const currentKm = latest.mileageOut ?? latest.mileageIn;
+    if (currentKm) {
+      await prisma.vehicle.update({ where: { id: vehicleId }, data: { mileage: currentKm } });
     }
   } catch { /* no bloquear la respuesta si falla */ }
 }
