@@ -320,10 +320,15 @@ export default function Jobs() {
                   /* Vehículo ya seleccionado → mostrar chip con opción de limpiar */
                   <div className="mt-1 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <Car className="h-4 w-4 text-blue-500 shrink-0" />
-                    <span className="text-sm font-medium text-blue-800 flex-1 truncate">{vehicleSelected.label}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-blue-800 truncate block">{vehicleSelected.label}</span>
+                      {vehicleSelected.mileage && (
+                        <span className="text-xs text-blue-500">Último km registrado: {vehicleSelected.mileage.toLocaleString('es-AR')} km</span>
+                      )}
+                    </div>
                     <button
                       type="button"
-                      onClick={() => { clearVehicleSearch(); setField('vehicleId', ''); }}
+                      onClick={() => { clearVehicleSearch(); setField('vehicleId', ''); setField('mileageIn', ''); }}
                       className="text-blue-400 hover:text-blue-700 shrink-0"
                     >
                       <X className="h-4 w-4" />
@@ -351,9 +356,12 @@ export default function Jobs() {
                             type="button"
                             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 text-left border-b last:border-0"
                             onClick={() => {
-                              const label = `${v.client?.lastName ?? ''}, ${v.client?.firstName ?? ''} — ${v.brand} ${v.model}${v.plate ? ` (${v.plate})` : ''}`.trim();
-                              setVehicleSelected({ id: v.id, label });
+                              const clientName = [v.client?.lastName, v.client?.firstName].filter(Boolean).join(', ');
+                              const label = `${clientName} — ${v.brand} ${v.model}${v.plate ? ` (${v.plate})` : ''}`.trim();
+                              setVehicleSelected({ id: v.id, label, mileage: v.mileage });
                               setField('vehicleId', String(v.id));
+                              // Pre-cargar km de entrada con el km actual del vehículo
+                              if (v.mileage) setField('mileageIn', String(v.mileage));
                               setVehicleQuery('');
                               setVehicleResults([]);
                             }}
@@ -361,7 +369,10 @@ export default function Jobs() {
                             <Car className="h-4 w-4 text-slate-400 shrink-0" />
                             <div>
                               <p className="text-sm font-medium">{v.brand} {v.model}{v.plate ? ` — ${v.plate}` : ''}</p>
-                              <p className="text-xs text-slate-400">{v.client?.lastName}, {v.client?.firstName}</p>
+                              <p className="text-xs text-slate-400">
+                                {[v.client?.lastName, v.client?.firstName].filter(Boolean).join(', ')}
+                                {v.mileage ? ` · ${v.mileage.toLocaleString('es-AR')} km` : ''}
+                              </p>
                             </div>
                           </button>
                         ))}
