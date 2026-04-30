@@ -255,7 +255,10 @@ export default function Clients() {
                     <Avatar firstName={c.firstName} lastName={c.lastName} />
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-800 text-base leading-tight">
+                      <p
+                        className="font-bold text-slate-800 text-base leading-tight hover:text-primary cursor-pointer hover:underline"
+                        onClick={() => navigate(`/clients/${c.id}`)}
+                      >
                         {clientFullName(c)}
                       </p>
                       <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
@@ -305,12 +308,15 @@ export default function Clients() {
                             <Car className="h-3.5 w-3.5 text-orange-600" />
                           </div>
 
-                          {/* Info del vehículo */}
-                          <div className="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                          {/* Info del vehículo — clickeable */}
+                          <div
+                            className="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-2 gap-y-0 cursor-pointer hover:text-primary group"
+                            onClick={() => navigate(`/vehicles/${v.id}`)}
+                          >
                             {v.plate && (
-                              <span className="font-mono font-bold text-sm text-slate-800">{v.plate}</span>
+                              <span className="font-mono font-bold text-sm text-slate-800 group-hover:text-primary">{v.plate}</span>
                             )}
-                            <span className="text-sm text-slate-600">{v.brand} {v.model}</span>
+                            <span className="text-sm text-slate-600 group-hover:text-primary">{v.brand} {v.model}</span>
                             {v.year  && <span className="text-xs text-slate-400">{v.year}</span>}
                             {v.color && <span className="text-xs text-slate-400">· {v.color}</span>}
                             {v.mileage && (
