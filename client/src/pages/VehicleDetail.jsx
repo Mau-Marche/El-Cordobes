@@ -171,7 +171,7 @@ export default function VehicleDetail() {
         </div>
 
         {/* Historial de kilometraje */}
-        <KmHistory jobs={vehicle.jobs} vehicleInitialKm={vehicle.mileage} />
+        <KmHistory jobs={vehicle.jobs} vehicleInitialKm={vehicle.mileage} onRefresh={load} />
 
         {/* Historial de trabajos */}
         <Card>
@@ -309,18 +309,42 @@ export default function VehicleDetail() {
   );
 }
 
-function KmHistory({ jobs, vehicleInitialKm }) {
-  // Trabajos con al menos mileageIn, ordenados cronológicamente (más viejo primero)
+function KmHistory({ jobs, vehicleInitialKm, onRefresh }) {
+  const [savingId, setSavingId] = useState(null);
+  const [kmOutInputs, setKmOutInputs] = useState({}); // jobId → valor string
+
   const entries = [...jobs]
     .filter(j => j.mileageIn || j.mileageOut)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   if (entries.length === 0 && !vehicleInitialKm) return null;
 
-  const firstKm   = vehicleInitialKm || (entries[0]?.mileageIn ?? entries[0]?.mileageOut);
+  const firstKm  = vehicleInitialKm || (entries[0]?.mileageIn ?? entries[0]?.mileageOut);
   const lastEntry = entries[entries.length - 1];
-  const lastKm    = lastEntry ? (lastEntry.mileageOut ?? lastEntry.mileageIn) : firstKm;
-  const totalKm   = lastKm - firstKm;
+  const lastKm   = lastEntry ? (lastEntry.mileageOut ?? lastEntry.mileageIn) : firstKm;
+  const totalKm  = lastKm - firstKm;
+
+  async function saveKmOut(job) {
+    const val = parseInt(kmOutInputs[job.id]);
+    if (!val || val <= 0) return;
+    setSavingId(job.id);
+    try {
+      await jobsApi.update(job.id, {
+        description: job.description,
+        mileageIn: job.mileageIn,
+        mileageOut: val,
+        laborCost: job.laborCost,
+        status: job.status,
+        notes: job.notes,
+        items: job.items || [],
+      });
+      toast({ title: `Km salida registrado: ${val.toLocaleString('es-AR')} km`, variant: 'success' });
+      setKmOutInputs(prev => { const n = { ...prev }; delete n[job.id]; return n; });
+      onRefresh();
+    } catch {
+      toast({ title: 'Error al guardar km salida', variant: 'error' });
+    } finally { setSavingId(null); }
+  }
 
   return (
     <Card>
@@ -354,30 +378,25 @@ function KmHistory({ jobs, vehicleInitialKm }) {
         {entries.length > 0 && (
           <div className="space-y-2">
             {entries.map((job, idx) => {
-              const prev      = idx > 0 ? entries[idx - 1] : null;
+              const prev       = idx > 0 ? entries[idx - 1] : null;
               const prevExitKm = prev ? (prev.mileageOut ?? prev.mileageIn) : vehicleInitialKm;
-              const kmBetween  = prevExitKm != null && job.mileageIn != null
-                ? job.mileageIn - prevExitKm : null;
-              const kmInTaller = job.mileageIn != null && job.mileageOut != null
-                ? job.mileageOut - job.mileageIn : null;
+              const kmBetween  = prevExitKm != null && job.mileageIn != null ? job.mileageIn - prevExitKm : null;
+              const kmInTaller = job.mileageIn != null && job.mileageOut != null ? job.mileageOut - job.mileageIn : null;
               const isLast     = idx === entries.length - 1;
+              const pendingOut = job.mileageOut == null;
+              const inputVal   = kmOutInputs[job.id] ?? '';
 
               return (
                 <div key={job.id} className={`rounded-lg border p-3 ${isLast ? 'border-blue-200 bg-blue-50/40' : 'border-slate-100 bg-white'}`}>
-                  {/* Encabezado visita */}
+                  {/* Encabezado */}
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <Link
-                        to={`/jobs/${job.id}`}
-                        className="text-sm font-semibold hover:text-primary hover:underline"
-                      >
+                      <Link to={`/jobs/${job.id}`} className="text-sm font-semibold hover:text-primary hover:underline">
                         {job.description?.split('\n')[0] || 'Sin descripción'}
                       </Link>
                       <p className="text-xs text-slate-400">{formatDate(job.date)}</p>
                     </div>
-                    {isLast && (
-                      <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Última visita</span>
-                    )}
+                    {isLast && <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Última visita</span>}
                   </div>
 
                   {/* Km entrada → salida */}
@@ -385,25 +404,50 @@ function KmHistory({ jobs, vehicleInitialKm }) {
                     <div className="flex items-center gap-1.5 bg-slate-100 rounded-md px-2 py-1">
                       <span className="text-xs text-slate-500">Entrada</span>
                       <span className="text-sm font-bold text-slate-800">
-                        {job.mileageIn != null ? `${job.mileageIn.toLocaleString('es-AR')} km` : <span className="text-slate-300 font-normal">—</span>}
+                        {job.mileageIn != null ? `${job.mileageIn.toLocaleString('es-AR')} km` : '—'}
                       </span>
                     </div>
 
                     <span className="text-slate-300 text-lg">→</span>
 
-                    <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 ${job.mileageOut != null ? 'bg-green-100' : 'bg-yellow-50 border border-dashed border-yellow-300'}`}>
-                      <span className={`text-xs ${job.mileageOut != null ? 'text-green-600' : 'text-yellow-500'}`}>Salida</span>
-                      <span className={`text-sm font-bold ${job.mileageOut != null ? 'text-green-800' : 'text-yellow-400'}`}>
-                        {job.mileageOut != null ? `${job.mileageOut.toLocaleString('es-AR')} km` : 'Pendiente'}
-                      </span>
-                    </div>
+                    {pendingOut ? (
+                      <div className="flex items-center gap-1.5 bg-yellow-50 border border-dashed border-yellow-300 rounded-md px-2 py-1">
+                        <span className="text-xs text-yellow-500">Salida</span>
+                        <span className="text-sm font-medium text-yellow-400">Pendiente</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 bg-green-100 rounded-md px-2 py-1">
+                        <span className="text-xs text-green-600">Salida</span>
+                        <span className="text-sm font-bold text-green-800">{job.mileageOut.toLocaleString('es-AR')} km</span>
+                      </div>
+                    )}
 
                     {kmInTaller != null && (
-                      <span className="text-xs text-green-600 font-medium">
-                        (+{kmInTaller.toLocaleString('es-AR')} km en taller)
-                      </span>
+                      <span className="text-xs text-green-600 font-medium">(+{kmInTaller.toLocaleString('es-AR')} km en taller)</span>
                     )}
                   </div>
+
+                  {/* Input rápido km salida */}
+                  {pendingOut && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={job.mileageIn ?? 0}
+                        placeholder={`Km salida${job.mileageIn ? ` (mín. ${job.mileageIn.toLocaleString('es-AR')})` : ''}`}
+                        value={inputVal}
+                        onChange={e => setKmOutInputs(prev => ({ ...prev, [job.id]: e.target.value }))}
+                        onKeyDown={e => e.key === 'Enter' && saveKmOut(job)}
+                        className="flex-1 h-8 rounded-md border border-slate-200 bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                      <button
+                        onClick={() => saveKmOut(job)}
+                        disabled={!inputVal || savingId === job.id}
+                        className="h-8 px-3 rounded-md bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-40 transition-colors"
+                      >
+                        {savingId === job.id ? '...' : 'Guardar'}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Km entre visitas */}
                   {kmBetween != null && kmBetween > 0 && (
