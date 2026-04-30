@@ -10,7 +10,7 @@ import { Users, Wrench, FileText, TrendingUp, Search, Car, Calendar } from 'luci
 
 /* ── Imágenes de autos de lujo — Unsplash ───────────────────────── */
 // &h=480&fit=crop&crop=entropy → Unsplash recorta inteligentemente al banner
-const Q = '&w=1800&h=480&fit=crop&crop=entropy&q=90';
+const Q = '?w=1800&h=480&fit=crop&crop=entropy&q=90';
 const CAR_IMAGES = [
   { url: `https://images.unsplash.com/photo-1503376780353-7e6692767b70${Q}`, label: 'Porsche 911'        },
   { url: `https://images.unsplash.com/photo-1544636331-e26879cd4d9b${Q}`,   label: 'Bugatti Chiron'     },
