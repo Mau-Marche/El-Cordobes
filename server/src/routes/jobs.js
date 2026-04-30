@@ -30,22 +30,25 @@ const upload = multer({
   },
 });
 
-// Actualiza vehicle.mileage con el km del trabajo más reciente (por fecha).
-// Prioriza mileageOut sobre mileageIn dentro del mismo trabajo.
+// Actualiza vehicle.mileage solo si el nuevo km es MAYOR al actual.
+// El km de un vehículo nunca puede bajar.
 async function syncVehicleMileage(vehicleId) {
   try {
-    const latest = await prisma.job.findFirst({
-      where: {
-        vehicleId,
-        OR: [{ mileageOut: { not: null } }, { mileageIn: { not: null } }],
-      },
-      orderBy: { date: 'desc' },
-      select: { mileageIn: true, mileageOut: true },
+    // Km máximo registrado en todos los trabajos (mileageOut tiene prioridad sobre mileageIn)
+    const agg = await prisma.job.aggregate({
+      where: { vehicleId },
+      _max: { mileageIn: true, mileageOut: true },
     });
-    if (!latest) return;
-    const currentKm = latest.mileageOut ?? latest.mileageIn;
-    if (currentKm) {
-      await prisma.vehicle.update({ where: { id: vehicleId }, data: { mileage: currentKm } });
+    const maxKm = Math.max(agg._max.mileageOut || 0, agg._max.mileageIn || 0);
+    if (maxKm <= 0) return;
+
+    // Solo actualizar si el nuevo valor es mayor al km actual del vehículo
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: { mileage: true },
+    });
+    if (!vehicle || maxKm > (vehicle.mileage || 0)) {
+      await prisma.vehicle.update({ where: { id: vehicleId }, data: { mileage: maxKm } });
     }
   } catch { /* no bloquear la respuesta si falla */ }
 }
