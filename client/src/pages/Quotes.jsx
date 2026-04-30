@@ -701,7 +701,7 @@ export default function Quotes() {
 
       {/* ── Dialog crear / editar ── */}
       <Dialog open={!!dialog} onClose={closeDialog}>
-        <DialogContent onClose={closeDialog} className="max-w-2xl">
+        <DialogContent onClose={closeDialog} className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {dialog === 'create' ? 'Nuevo presupuesto' : `Editar ${selected?.number}`}
