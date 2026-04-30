@@ -798,7 +798,7 @@ export default function Quotes() {
               </div>
               {/* Encabezados de columna */}
               {form.items.length > 0 && (
-                <div className="grid gap-2 items-center mb-1 px-1" style={{gridTemplateColumns:'1fr 80px 120px 130px 36px'}}>
+                <div className="grid gap-2 items-center mb-1 px-1" style={{gridTemplateColumns:'3fr 55px 120px 120px 36px'}}>
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Descripción</span>
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide text-center">Cant.</span>
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide text-right">P. Unitario</span>
@@ -808,7 +808,7 @@ export default function Quotes() {
               )}
               <div className="space-y-2">
                 {form.items.map((item, idx) => (
-                  <div key={idx} className="grid gap-2 items-center" style={{gridTemplateColumns:'1fr 80px 120px 130px 36px'}}>
+                  <div key={idx} className="grid gap-2 items-center" style={{gridTemplateColumns:'3fr 55px 120px 120px 36px'}}>
                     <Input
                       placeholder="Descripción del ítem"
                       value={item.description}
@@ -818,7 +818,7 @@ export default function Quotes() {
                       type="number" placeholder="1" min="0" step="0.01"
                       value={item.quantity}
                       onChange={e => updateItem(idx, 'quantity', e.target.value)}
-                      className="text-center"
+                      className="text-center px-1"
                     />
                     <Input
                       type="number" placeholder="0.00" min="0" step="0.01"
