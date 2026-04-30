@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { Select, StatusSelect } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -250,16 +250,17 @@ export default function Jobs() {
                       <TableCell className="text-sm text-muted-foreground">{formatDate(j.date)}</TableCell>
                       <TableCell className="font-medium">{formatCurrency(j.totalCost)}</TableCell>
                       <TableCell>
-                        <Select
-                          className="h-7 text-xs w-36"
+                        <StatusSelect
                           value={j.status}
                           onChange={e => handleStatusChange(j, e.target.value)}
-                        >
-                          <option value="PENDING">Pendiente</option>
-                          <option value="IN_PROGRESS">En proceso</option>
-                          <option value="FINISHED">Finalizado</option>
-                          <option value="DELIVERED">Entregado</option>
-                        </Select>
+                          options={[
+                            { value: 'PENDING',     label: 'Pendiente'  },
+                            { value: 'IN_PROGRESS', label: 'En proceso' },
+                            { value: 'FINISHED',    label: 'Finalizado' },
+                            { value: 'DELIVERED',   label: 'Entregado'  },
+                          ]}
+                          className="w-36 text-xs"
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
@@ -378,12 +379,17 @@ export default function Jobs() {
               </div>
               <div>
                 <label className="text-sm font-medium">Estado</label>
-                <Select className="mt-1" value={form.status} onChange={e => setField('status', e.target.value)}>
-                  <option value="PENDING">Pendiente</option>
-                  <option value="IN_PROGRESS">En proceso</option>
-                  <option value="FINISHED">Finalizado</option>
-                  <option value="DELIVERED">Entregado</option>
-                </Select>
+                <StatusSelect
+                  className="mt-1 w-full"
+                  value={form.status}
+                  onChange={e => setField('status', e.target.value)}
+                  options={[
+                    { value: 'PENDING',     label: 'Pendiente'  },
+                    { value: 'IN_PROGRESS', label: 'En proceso' },
+                    { value: 'FINISHED',    label: 'Finalizado' },
+                    { value: 'DELIVERED',   label: 'Entregado'  },
+                  ]}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Km entrada</label>

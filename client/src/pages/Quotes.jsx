@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { Select, StatusSelect } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -762,12 +762,17 @@ export default function Quotes() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Estado</label>
-                <Select className="mt-1" value={form.status} onChange={e => setField('status', e.target.value)}>
-                  <option value="DRAFT">Borrador</option>
-                  <option value="SENT">Enviado</option>
-                  <option value="APPROVED">Aprobado</option>
-                  <option value="REJECTED">Rechazado</option>
-                </Select>
+                <StatusSelect
+                  className="mt-1 w-full"
+                  value={form.status}
+                  onChange={e => setField('status', e.target.value)}
+                  options={[
+                    { value: 'DRAFT',    label: 'Borrador'  },
+                    { value: 'SENT',     label: 'Enviado'   },
+                    { value: 'APPROVED', label: 'Aprobado'  },
+                    { value: 'REJECTED', label: 'Rechazado' },
+                  ]}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Válido hasta</label>
