@@ -38,16 +38,15 @@ const STATUS_COLORS = {
 export function StatusSelect({ value, onChange, options, className }) {
   const colorClass = STATUS_COLORS[value] || 'bg-white border-slate-200 text-slate-800';
   return (
-    <div className="relative">
+    <div className={cn('relative', className)}>
       <select
         value={value}
         onChange={onChange}
         className={cn(
-          'appearance-none rounded-md border px-3 py-1.5 pr-7 text-sm font-medium',
+          'w-full appearance-none rounded-md border px-3 py-1.5 pr-7 text-sm font-medium',
           'shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500',
           'disabled:cursor-not-allowed disabled:opacity-50',
           colorClass,
-          className
         )}
       >
         {options.map(o => (
