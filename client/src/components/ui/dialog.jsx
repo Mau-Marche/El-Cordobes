@@ -6,7 +6,7 @@ export function Dialog({ open, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-lg">{children}</div>
+      <div className="relative z-50 w-full">{children}</div>
     </div>
   );
 }
@@ -15,7 +15,7 @@ export function DialogContent({ className, children, onClose, ...props }) {
   return (
     <div
       className={cn(
-        'relative bg-background rounded-lg shadow-xl border p-6 m-4 max-h-[90vh] overflow-y-auto',
+        'relative bg-background rounded-lg shadow-xl border p-6 m-4 max-h-[90vh] overflow-y-auto w-full max-w-lg mx-auto',
         className
       )}
       {...props}
