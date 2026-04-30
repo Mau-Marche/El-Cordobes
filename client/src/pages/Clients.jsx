@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientsApi, vehiclesApi } from '@/lib/api';
 import { BRAND_NAMES, getModels } from '@/lib/car-brands';
+import { clientFullName } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -255,7 +256,7 @@ export default function Clients() {
 
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-800 text-base leading-tight">
-                        {c.lastName}, {c.firstName}
+                        {clientFullName(c)}
                       </p>
                       <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
                         {c.phone && (
@@ -552,7 +553,7 @@ function ClientSelect({ value, onChange }) {
   useEffect(() => {
     if (value && !display) {
       clientsApi.get(value)
-        .then(r => setDisplay(`${r.data.lastName}, ${r.data.firstName}`))
+        .then(r => setDisplay(clientFullName(r.data)))
         .catch(() => {});
     }
     if (!value) { setDisplay(''); }
@@ -604,9 +605,9 @@ function ClientSelect({ value, onChange }) {
         <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border rounded-lg shadow-xl max-h-52 overflow-y-auto">
           {results.map(c => (
             <button key={c.id} type="button"
-              onMouseDown={() => { onChange(String(c.id)); setDisplay(`${c.lastName}, ${c.firstName}`); setOpen(false); setQuery(''); }}
+              onMouseDown={() => { onChange(String(c.id)); setDisplay(clientFullName(c)); setOpen(false); setQuery(''); }}
               className="w-full text-left px-3 py-2.5 hover:bg-orange-50 border-b last:border-0 transition-colors">
-              <p className="text-sm font-medium">{c.lastName}, {c.firstName}</p>
+              <p className="text-sm font-medium">{clientFullName(c)}</p>
               <p className="text-xs text-muted-foreground">{[c.phone, c.dni && `DNI ${c.dni}`].filter(Boolean).join(' · ')}</p>
             </button>
           ))}
