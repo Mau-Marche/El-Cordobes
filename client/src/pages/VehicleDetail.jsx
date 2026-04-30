@@ -84,6 +84,12 @@ export default function VehicleDetail() {
       toast({ title: 'La descripción es requerida', variant: 'error' });
       return;
     }
+    const kmIn  = jobForm.mileageIn  ? parseInt(jobForm.mileageIn)  : null;
+    const kmOut = jobForm.mileageOut ? parseInt(jobForm.mileageOut) : null;
+    if (kmIn != null && kmOut != null && kmOut < kmIn) {
+      toast({ title: `Km salida (${kmOut.toLocaleString('es-AR')}) no puede ser menor al de entrada (${kmIn.toLocaleString('es-AR')})`, variant: 'error' });
+      return;
+    }
     setSaving(true);
     try {
       await jobsApi.create({ ...jobForm, vehicleId: vehicle.id, total: parseFloat(jobForm.laborCost || 0) });
@@ -327,6 +333,10 @@ function KmHistory({ jobs, vehicleInitialKm, onRefresh }) {
   async function saveKmOut(job) {
     const val = parseInt(kmOutInputs[job.id]);
     if (!val || val <= 0) return;
+    if (job.mileageIn != null && val < job.mileageIn) {
+      toast({ title: `El km de salida (${val.toLocaleString('es-AR')}) no puede ser menor al de entrada (${job.mileageIn.toLocaleString('es-AR')})`, variant: 'error' });
+      return;
+    }
     setSavingId(job.id);
     try {
       await jobsApi.update(job.id, {
@@ -428,26 +438,41 @@ function KmHistory({ jobs, vehicleInitialKm, onRefresh }) {
                   </div>
 
                   {/* Input rápido km salida */}
-                  {pendingOut && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={job.mileageIn ?? 0}
-                        placeholder={`Km salida${job.mileageIn ? ` (mín. ${job.mileageIn.toLocaleString('es-AR')})` : ''}`}
-                        value={inputVal}
-                        onChange={e => setKmOutInputs(prev => ({ ...prev, [job.id]: e.target.value }))}
-                        onKeyDown={e => e.key === 'Enter' && saveKmOut(job)}
-                        className="flex-1 h-8 rounded-md border border-slate-200 bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-                      />
-                      <button
-                        onClick={() => saveKmOut(job)}
-                        disabled={!inputVal || savingId === job.id}
-                        className="h-8 px-3 rounded-md bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-40 transition-colors"
-                      >
-                        {savingId === job.id ? '...' : 'Guardar'}
-                      </button>
-                    </div>
-                  )}
+                  {pendingOut && (() => {
+                    const numVal = parseInt(inputVal);
+                    const isInvalid = inputVal !== '' && (!numVal || (job.mileageIn != null && numVal < job.mileageIn));
+                    return (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={job.mileageIn ?? 0}
+                            placeholder={`Km salida${job.mileageIn ? ` (mín. ${job.mileageIn.toLocaleString('es-AR')})` : ''}`}
+                            value={inputVal}
+                            onChange={e => setKmOutInputs(prev => ({ ...prev, [job.id]: e.target.value }))}
+                            onKeyDown={e => e.key === 'Enter' && !isInvalid && saveKmOut(job)}
+                            className={`flex-1 h-8 rounded-md border bg-white px-2 text-sm focus:outline-none focus:ring-2 ${
+                              isInvalid
+                                ? 'border-red-400 focus:ring-red-400 text-red-600'
+                                : 'border-slate-200 focus:ring-green-400'
+                            }`}
+                          />
+                          <button
+                            onClick={() => saveKmOut(job)}
+                            disabled={!inputVal || isInvalid || savingId === job.id}
+                            className="h-8 px-3 rounded-md bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-40 transition-colors"
+                          >
+                            {savingId === job.id ? '...' : 'Guardar'}
+                          </button>
+                        </div>
+                        {isInvalid && (
+                          <p className="text-xs text-red-500">
+                            El km de salida debe ser mayor al de entrada ({job.mileageIn?.toLocaleString('es-AR')} km)
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Km entre visitas */}
                   {kmBetween != null && kmBetween > 0 && (

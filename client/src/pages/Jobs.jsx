@@ -131,6 +131,12 @@ export default function Jobs() {
       toast({ title: 'Vehículo y descripción son requeridos', variant: 'error' });
       return;
     }
+    const kmIn  = form.mileageIn  ? parseInt(form.mileageIn)  : null;
+    const kmOut = form.mileageOut ? parseInt(form.mileageOut) : null;
+    if (kmIn != null && kmOut != null && kmOut < kmIn) {
+      toast({ title: `Km salida (${kmOut.toLocaleString('es-AR')}) no puede ser menor al de entrada (${kmIn.toLocaleString('es-AR')})`, variant: 'error' });
+      return;
+    }
     setSaving(true);
     try {
       if (dialog === 'create') {
