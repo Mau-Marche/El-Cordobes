@@ -796,37 +796,44 @@ export default function Quotes() {
                   items: [...f.items, { description: desc, quantity: '1', unitPrice: '0', subtotal: '0' }]
                 }))} />
               </div>
+              {/* Encabezados de columna */}
+              {form.items.length > 0 && (
+                <div className="grid gap-2 items-center mb-1 px-1" style={{gridTemplateColumns:'1fr 80px 120px 130px 36px'}}>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Descripción</span>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide text-center">Cant.</span>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide text-right">P. Unitario</span>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide text-right">Subtotal</span>
+                  <span />
+                </div>
+              )}
               <div className="space-y-2">
                 {form.items.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-5">
-                      <Input
-                        placeholder="Descripción"
-                        value={item.description}
-                        onChange={e => updateItem(idx, 'description', e.target.value)}
-                      />
+                  <div key={idx} className="grid gap-2 items-center" style={{gridTemplateColumns:'1fr 80px 120px 130px 36px'}}>
+                    <Input
+                      placeholder="Descripción del ítem"
+                      value={item.description}
+                      onChange={e => updateItem(idx, 'description', e.target.value)}
+                    />
+                    <Input
+                      type="number" placeholder="1" min="0" step="0.01"
+                      value={item.quantity}
+                      onChange={e => updateItem(idx, 'quantity', e.target.value)}
+                      className="text-center"
+                    />
+                    <Input
+                      type="number" placeholder="0.00" min="0" step="0.01"
+                      value={item.unitPrice}
+                      onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
+                      className="text-right font-medium"
+                    />
+                    <div className="flex items-center justify-end h-10 px-3 rounded-md bg-slate-50 border border-slate-200">
+                      <span className="text-sm font-bold text-slate-800">
+                        {formatCurrency(parseFloat(item.subtotal) || 0)}
+                      </span>
                     </div>
-                    <div className="col-span-2">
-                      <Input type="number" placeholder="Cant." min="0" step="0.01"
-                        value={item.quantity}
-                        onChange={e => updateItem(idx, 'quantity', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input type="number" placeholder="P.Unit." min="0" step="0.01"
-                        value={item.unitPrice}
-                        onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input readOnly value={formatCurrency(parseFloat(item.subtotal) || 0)}
-                        className="bg-slate-50 text-right text-sm" />
-                    </div>
-                    <div className="col-span-1 flex justify-center">
-                      <Button size="icon" variant="ghost" onClick={() => removeItem(idx)} className="text-destructive h-8 w-8">
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    <Button size="icon" variant="ghost" onClick={() => removeItem(idx)} className="text-destructive h-9 w-9">
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
                 {form.items.length === 0 && (
@@ -838,17 +845,17 @@ export default function Quotes() {
             </div>
 
             {/* ── Mano de obra y total ── */}
-            <div className="grid grid-cols-2 gap-3 items-end">
-              <div>
-                <label className="text-sm font-medium">Mano de obra ($)</label>
-                <Input type="number" min="0" step="0.01" className="mt-1"
+            <div className="flex items-end justify-between gap-4 pt-1 border-t border-slate-100">
+              <div className="flex-1 max-w-[200px]">
+                <label className="text-sm font-medium text-slate-600">Mano de obra ($)</label>
+                <Input type="number" min="0" step="0.01" className="mt-1 text-right font-medium"
                   value={form.laborCost}
                   onChange={e => setField('laborCost', e.target.value)}
                 />
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total</p>
-                <p className="text-2xl font-black text-primary">{formatCurrency(grandTotal)}</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Total</p>
+                <p className="text-3xl font-black text-primary">{formatCurrency(grandTotal)}</p>
               </div>
             </div>
 
