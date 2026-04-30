@@ -17,16 +17,32 @@ router.get('/', async (req, res) => {
     const { status, clientId, page = 1, limit = 20, search = '' } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Búsqueda multi-palabra: "Sandra Luppino" o "Luppino Sandra" → cada token
+    // debe aparecer en firstName o lastName (AND entre tokens)
+    const words = search.trim().split(/\s+/).filter(Boolean);
+
+    const searchWhere = !search ? {} : words.length > 1
+      ? {
+          AND: words.map(w => ({
+            OR: [
+              { client: { firstName: { contains: w, mode: 'insensitive' } } },
+              { client: { lastName:  { contains: w, mode: 'insensitive' } } },
+            ],
+          })),
+        }
+      : {
+          OR: [
+            { number:  { contains: search, mode: 'insensitive' } },
+            { client:  { firstName: { contains: search, mode: 'insensitive' } } },
+            { client:  { lastName:  { contains: search, mode: 'insensitive' } } },
+            { vehicle: { plate:     { contains: search, mode: 'insensitive' } } },
+          ],
+        };
+
     const where = {
-      ...(status ? { status } : {}),
+      ...(status   ? { status }                    : {}),
       ...(clientId ? { clientId: parseInt(clientId) } : {}),
-      ...(search ? {
-        OR: [
-          { number: { contains: search, mode: 'insensitive' } },
-          { client: { lastName: { contains: search, mode: 'insensitive' } } },
-          { vehicle: { plate: { contains: search, mode: 'insensitive' } } },
-        ],
-      } : {}),
+      ...searchWhere,
     };
 
     const [total, quotes] = await Promise.all([
