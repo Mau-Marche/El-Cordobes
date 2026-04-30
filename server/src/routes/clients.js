@@ -11,17 +11,30 @@ router.get('/', async (req, res) => {
     const { search = '', page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Permite buscar "Sandra Luppino" o "Luppino Sandra" — cada palabra debe
+    // aparecer en firstName o lastName (AND entre palabras, OR dentro de cada una)
+    const words = search.trim().split(/\s+/).filter(Boolean);
+
     const where = search
       ? {
           active: true,
-          OR: [
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
-            { dni: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { vehicles: { some: { plate: { contains: search, mode: 'insensitive' } } } },
-          ],
+          AND: words.length > 1
+            ? words.map(w => ({
+                OR: [
+                  { firstName: { contains: w, mode: 'insensitive' } },
+                  { lastName:  { contains: w, mode: 'insensitive' } },
+                ],
+              }))
+            : [{ // una sola palabra: busca en todos los campos
+                OR: [
+                  { firstName: { contains: search, mode: 'insensitive' } },
+                  { lastName:  { contains: search, mode: 'insensitive' } },
+                  { dni:       { contains: search, mode: 'insensitive' } },
+                  { phone:     { contains: search, mode: 'insensitive' } },
+                  { email:     { contains: search, mode: 'insensitive' } },
+                  { vehicles:  { some: { plate: { contains: search, mode: 'insensitive' } } } },
+                ],
+              }],
         }
       : { active: true };
 
