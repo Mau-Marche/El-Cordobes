@@ -14,7 +14,7 @@ import { Plus, Search, Edit, Trash2, Printer, ArrowRight, ChevronLeft, ChevronRi
 import { formatCurrency, formatDate, QUOTE_STATUS } from '@/lib/utils';
 import { buildPrintHTML, loadLogoDataUrl } from '@/lib/printQuote';
 
-const EMPTY_FORM = { clientId: '', vehicleId: '', validUntil: '', notes: '', laborCost: '0', status: 'DRAFT', items: [] };
+const EMPTY_FORM = { clientId: '', vehicleId: '', validUntil: '', notes: '', laborCost: '0', status: 'DRAFT', items: [], mileageIn: '' };
 const EMPTY_ITEM = { description: '', quantity: '1', unitPrice: '0', subtotal: '0' };
 
 /* ── Autocomplete genérico ──────────────────────────────────────── */
@@ -443,13 +443,15 @@ export default function Quotes() {
   function selectVehicle(item) {
     setSelectedVehicle(item);
     setSelectedVehicleRaw(item.raw || null);
-    setForm(f => ({ ...f, vehicleId: String(item.id) }));
+    // Auto-rellenar km de entrada con el km actual del vehículo (solo al crear)
+    const autoKm = item.raw?.mileage ? String(item.raw.mileage) : '';
+    setForm(f => ({ ...f, vehicleId: String(item.id), mileageIn: f.mileageIn || autoKm }));
     // Si el vehículo trae cliente y aún no hay cliente seleccionado, auto-seleccionarlo
     if (!selectedClient && item.raw?.client) {
       const c = item.raw.client;
       const clientItem = { id: item.raw.clientId, label: `${c.lastName}, ${c.firstName}` };
       setSelectedClient(clientItem);
-      setForm(f => ({ ...f, clientId: String(item.raw.clientId), vehicleId: String(item.id) }));
+      setForm(f => ({ ...f, clientId: String(item.raw.clientId), vehicleId: String(item.id), mileageIn: f.mileageIn || autoKm }));
       loadVehicles(item.raw.clientId);
     }
   }
@@ -457,7 +459,7 @@ export default function Quotes() {
   function clearVehicle() {
     setSelectedVehicle(null);
     setSelectedVehicleRaw(null);
-    setForm(f => ({ ...f, vehicleId: '' }));
+    setForm(f => ({ ...f, vehicleId: '', mileageIn: '' }));
   }
 
   function openCreate() {
@@ -480,6 +482,7 @@ export default function Quotes() {
         notes:      data.notes || '',
         laborCost:  String(data.laborCost),
         status:     data.status,
+        mileageIn:  data.mileageIn ? String(data.mileageIn) : '',
         items: data.items.map(i => ({
           description: i.description,
           quantity:    String(i.quantity),
@@ -759,8 +762,8 @@ export default function Quotes() {
               </div>
             </div>
 
-            {/* ── Estado y fecha ── */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* ── Estado, fecha y km ── */}
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-sm font-medium">Estado</label>
                 <StatusSelect
@@ -778,6 +781,15 @@ export default function Quotes() {
               <div>
                 <label className="text-sm font-medium">Válido hasta</label>
                 <Input type="date" className="mt-1" value={form.validUntil} onChange={e => setField('validUntil', e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Km entrada</label>
+                <Input
+                  type="number" min="0" className="mt-1"
+                  placeholder={selectedVehicleRaw?.mileage ? `Actual: ${Number(selectedVehicleRaw.mileage).toLocaleString('es-AR')}` : 'Kilometraje'}
+                  value={form.mileageIn}
+                  onChange={e => setField('mileageIn', e.target.value)}
+                />
               </div>
             </div>
 

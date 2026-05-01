@@ -89,7 +89,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/quotes
 router.post('/', async (req, res) => {
   try {
-    const { clientId, vehicleId, validUntil, notes, laborCost, status, items } = req.body;
+    const { clientId, vehicleId, validUntil, notes, laborCost, status, items, mileageIn } = req.body;
     if (!clientId || !vehicleId) {
       return res.status(400).json({ error: 'Cliente y vehículo requeridos' });
     }
@@ -109,6 +109,7 @@ router.post('/', async (req, res) => {
         laborCost: parseFloat(laborCost) || 0,
         total,
         status: status || 'DRAFT',
+        mileageIn: mileageIn ? parseInt(mileageIn) : null,
         items: {
           create: parsedItems.map(i => ({
             description: i.description.trim(),
@@ -132,7 +133,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { validUntil, notes, laborCost, status, items } = req.body;
+    const { validUntil, notes, laborCost, status, items, mileageIn } = req.body;
 
     const parsedItems = (items || []).filter(i => i.description && i.description.trim());
     const totalItems = parsedItems.reduce((acc, i) => acc + (parseFloat(i.subtotal) || 0), 0);
@@ -149,6 +150,7 @@ router.put('/:id', async (req, res) => {
         laborCost: parseFloat(laborCost) || 0,
         total,
         status,
+        mileageIn: mileageIn ? parseInt(mileageIn) : null,
         items: {
           create: parsedItems.map(i => ({
             description: i.description.trim(),
@@ -187,6 +189,7 @@ router.post('/:id/convert', async (req, res) => {
         description: `Trabajo desde presupuesto ${quote.number}`,
         laborCost: quote.laborCost,
         totalCost: quote.total,
+        mileageIn: quote.mileageIn ?? null,
         status: 'PENDING',
         notes: quote.notes,
         items: {

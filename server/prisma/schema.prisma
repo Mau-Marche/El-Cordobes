@@ -126,6 +126,7 @@ model Quote {
   notes       String?
   laborCost   Decimal     @default(0) @db.Decimal(10, 2)
   total       Decimal     @default(0) @db.Decimal(10, 2)
+  mileageIn   Int?
   pdfPath     String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
